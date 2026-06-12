@@ -1,6 +1,6 @@
 const STORAGE_KEY = "catatan_keuangan_pwa_v1";
 const PREFERENCES_KEY = "catatan_keuangan_preferences_v1";
-const APP_VERSION = "1.0.4";
+const APP_VERSION = "1.0.5";
 const IS_DEV = location.hostname === "localhost" || location.hostname === "127.0.0.1";
 const UPDATE_KEYS = {
   currentVersion: "catatkas_current_version",
@@ -39,6 +39,7 @@ const BASE_URL = isGitHubPages ? `/${repoName}/` : '/';
 const state = loadState();
 const preferences = loadPreferences();
 let deferredPrompt = null;
+let installAutoHideTimer = null;
 let activeModalResolve = null;
 let lastFocusedElement = null;
 let serviceWorkerRegistration = null;
@@ -251,6 +252,17 @@ function bindEvents() {
       deferredPrompt = event;
       elements.installButton.hidden = false;
       console.log("[PWA Debug] deferredPrompt saved, button visible");
+
+      // Auto-hide after 8 seconds if user doesn't tap it.
+      // In a TWA, the button appears but user won't tap it → treat as installed.
+      clearTimeout(installAutoHideTimer);
+      installAutoHideTimer = setTimeout(() => {
+        if (!elements.installButton.hidden) {
+          elements.installButton.hidden = true;
+          localStorage.setItem("catatkas_app_installed", "1");
+          console.log("[PWA Debug] Install button auto-hidden (TWA detected by inactivity)");
+        }
+      }, 8000);
     });
 
     // Deferred check: TWA may not report standalone immediately on page load
@@ -259,6 +271,7 @@ function bindEvents() {
         if (isRunningStandalone()) {
           elements.installButton.hidden = true;
           deferredPrompt = null;
+          clearTimeout(installAutoHideTimer);
           console.log("[PWA Debug] Standalone detected after load, hiding install button");
         }
       }, 500);
@@ -1231,10 +1244,12 @@ async function importBackup(event) {
 
 async function installApp() {
   console.log("[PWA Debug] Install button clicked");
+  clearTimeout(installAutoHideTimer);
   
   if (isRunningStandalone()) {
     console.log("[PWA Debug] Already in standalone mode");
     elements.installButton.hidden = true;
+    localStorage.setItem("catatkas_app_installed", "1");
     return;
   }
 
@@ -1256,12 +1271,18 @@ async function installApp() {
     if (userChoice.outcome === "accepted") {
       console.log("[PWA Debug] User accepted install");
     } else {
+      // User dismissed — likely a TWA where install isn't possible
       console.log("[PWA Debug] User dismissed install");
+      localStorage.setItem("catatkas_app_installed", "1");
+      elements.installButton.hidden = true;
     }
     
     deferredPrompt = null;
   } catch (error) {
     console.error("[PWA Debug] Install prompt error:", error);
+    // Prompt failed — likely a TWA context
+    localStorage.setItem("catatkas_app_installed", "1");
+    elements.installButton.hidden = true;
   }
 }
 
