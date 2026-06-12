@@ -1,4 +1,4 @@
-const APP_VERSION = "1.0.0";
+const APP_VERSION = "1.0.1";
 const CACHE_PREFIX = "catatkas-cache-";
 const CACHE_NAME = `${CACHE_PREFIX}v${APP_VERSION}`;
 const APP_SHELL = [
@@ -33,6 +33,14 @@ self.addEventListener("activate", (event) => {
 });
 
 self.addEventListener("message", (event) => {
+  if (event.data?.type === "CHECK_UPDATE") {
+    event.ports?.[0]?.postMessage({
+      type: "UPDATE_READY",
+      version: APP_VERSION,
+      cacheName: CACHE_NAME
+    });
+  }
+
   if (event.data?.type === "SKIP_WAITING") {
     self.skipWaiting();
   }

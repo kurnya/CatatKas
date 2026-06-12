@@ -1,6 +1,13 @@
 const STORAGE_KEY = "catatan_keuangan_pwa_v1";
 const PREFERENCES_KEY = "catatan_keuangan_preferences_v1";
-const APP_VERSION = "1.0.0";
+const APP_VERSION = "1.0.1";
+const UPDATE_KEYS = {
+  currentVersion: "catatkas_current_version",
+  availableVersion: "catatkas_update_available_version",
+  remindLaterUntil: "catatkas_update_remind_later_until",
+  ignoredVersion: "catatkas_ignored_update_version",
+  successPending: "catatkas_update_success_pending"
+};
 
 const defaults = {
   types: ["Pemasukan", "Pengeluaran", "Transfer"],
@@ -52,6 +59,7 @@ const elements = {
   appModalTitle: document.querySelector("#appModalTitle"),
   appModalMessage: document.querySelector("#appModalMessage"),
   appModalContent: document.querySelector("#appModalContent"),
+  appModalActions: document.querySelector(".modal-actions"),
   appModalCancel: document.querySelector("#appModalCancel"),
   appModalConfirm: document.querySelector("#appModalConfirm"),
   summaryMonth: document.querySelector("#summaryMonth"),
@@ -102,7 +110,10 @@ const elements = {
   preferenceTheme: document.querySelector("#preferenceTheme"),
   preferenceDefaultPayment: document.querySelector("#preferenceDefaultPayment"),
   appVersionLabel: document.querySelector("#appVersionLabel"),
-  checkUpdateButton: document.querySelector("#checkUpdateButton")
+  updateAppName: document.querySelector("#updateAppName"),
+  updateStatusText: document.querySelector("#updateStatusText"),
+  checkUpdateButton: document.querySelector("#checkUpdateButton"),
+  updateNowButton: document.querySelector("#updateNowButton")
 };
 
 init();
@@ -113,6 +124,7 @@ function init() {
   elements.historyMonth.value = month;
   elements.date.value = today();
   bindEvents();
+  showUpdateSuccessToastIfNeeded();
   renderAll();
   navigate("home");
   registerServiceWorker();
@@ -160,6 +172,7 @@ function bindEvents() {
   elements.preferenceTheme.addEventListener("change", savePreferencesFromForm);
   elements.preferenceDefaultPayment.addEventListener("change", savePreferencesFromForm);
   elements.checkUpdateButton.addEventListener("click", () => checkForAppUpdate(true));
+  elements.updateNowButton.addEventListener("click", applyAppUpdate);
 
   document.querySelectorAll("[data-quick-date]").forEach((button) => {
     button.addEventListener("click", () => {
@@ -573,6 +586,8 @@ function openModal(options) {
   elements.appModalContent.innerHTML = "";
   if (options.content) elements.appModalContent.appendChild(options.content);
   elements.appModalCancel.hidden = options.cancelText === "";
+  elements.appModalConfirm.hidden = options.confirmText === "";
+  elements.appModalActions.hidden = options.cancelText === "" && options.confirmText === "";
   elements.appModalOverlay.hidden = false;
   elements.appModal.classList.add("open");
   elements.appModal.setAttribute("aria-hidden", "false");
@@ -596,6 +611,8 @@ function closeModal(result = false, silent = false) {
   elements.appModalOverlay.hidden = true;
   document.body.classList.remove("sheet-open");
   elements.appModalConfirm.onclick = null;
+  elements.appModalConfirm.hidden = false;
+  elements.appModalActions.hidden = false;
 
   const resolver = activeModalResolve;
   activeModalResolve = null;
@@ -1041,6 +1058,7 @@ async function deleteAllTransactions() {
 
 function renderPreferences() {
   elements.appVersionLabel.textContent = APP_VERSION;
+  renderUpdateSettings();
   elements.preferenceCurrency.value = preferences.currency;
   elements.preferenceDateFormat.value = preferences.dateFormat;
   elements.preferenceTheme.value = preferences.theme;
@@ -1167,6 +1185,7 @@ function updateInstallButtonVisibility() {
 function registerServiceWorker() {
   if (!("serviceWorker" in navigator)) {
     elements.checkUpdateButton.disabled = true;
+    elements.updateNowButton.hidden = true;
     return;
   }
 
@@ -1180,8 +1199,7 @@ function registerServiceWorker() {
     .then((registration) => {
       serviceWorkerRegistration = registration;
       if (registration.waiting) {
-        pendingServiceWorker = registration.waiting;
-        showUpdateAvailableToast();
+        handleUpdateReady(registration.waiting, false);
       }
 
       registration.addEventListener("updatefound", () => {
@@ -1189,8 +1207,7 @@ function registerServiceWorker() {
         if (!newWorker) return;
         newWorker.addEventListener("statechange", () => {
           if (newWorker.state === "installed" && navigator.serviceWorker.controller) {
-            pendingServiceWorker = newWorker;
-            showUpdateAvailableToast();
+            handleUpdateReady(newWorker, false);
           }
         });
       });
@@ -1208,17 +1225,31 @@ async function checkForAppUpdate(manual = false) {
     return false;
   }
 
+  if (!navigator.onLine) {
+    if (manual) showToast("Tidak dapat mengecek update saat offline.", "warning");
+    return false;
+  }
+
+  elements.checkUpdateButton.disabled = true;
+  elements.checkUpdateButton.textContent = "Mengecek update...";
+  renderUpdateSettings({ checking: true });
+
   const registration = serviceWorkerRegistration || await navigator.serviceWorker.getRegistration("./");
   if (!registration) {
     if (manual) showToast("Service worker belum aktif. Coba lagi setelah halaman dimuat ulang.", "warning");
+    elements.checkUpdateButton.disabled = false;
+    elements.checkUpdateButton.textContent = "Cek Update";
+    renderUpdateSettings();
     return false;
   }
 
   serviceWorkerRegistration = registration;
   if (registration.waiting || pendingServiceWorker) {
     pendingServiceWorker = registration.waiting || pendingServiceWorker;
-    showUpdateAvailableToast();
-    return true;
+    const hasUpdate = await handleUpdateReady(pendingServiceWorker, manual);
+    elements.checkUpdateButton.disabled = false;
+    elements.checkUpdateButton.textContent = "Cek Update";
+    return hasUpdate;
   }
 
   try {
@@ -1226,16 +1257,26 @@ async function checkForAppUpdate(manual = false) {
     await waitForUpdateCheck(registration);
   } catch {
     if (manual) showToast("Tidak bisa cek update saat ini. Periksa koneksi internet.", "warning");
+    elements.checkUpdateButton.disabled = false;
+    elements.checkUpdateButton.textContent = "Cek Update";
+    renderUpdateSettings();
     return false;
   }
 
   if (registration.waiting || pendingServiceWorker) {
     pendingServiceWorker = registration.waiting || pendingServiceWorker;
-    showUpdateAvailableToast();
-    return true;
+    const hasUpdate = await handleUpdateReady(pendingServiceWorker, manual);
+    elements.checkUpdateButton.disabled = false;
+    elements.checkUpdateButton.textContent = "Cek Update";
+    return hasUpdate;
   }
 
+  localStorage.removeItem(UPDATE_KEYS.availableVersion);
+  pendingServiceWorker = null;
   if (manual) showToast("CatatKas sudah menggunakan versi terbaru.", "success");
+  elements.checkUpdateButton.disabled = false;
+  elements.checkUpdateButton.textContent = "Cek Update";
+  renderUpdateSettings();
   return false;
 }
 
@@ -1248,14 +1289,204 @@ function waitForUpdateCheck(registration) {
     }
 
     const done = () => {
-      if (["installed", "activated", "redundant"].includes(worker.state)) resolve();
+      if (!["installed", "activated", "redundant"].includes(worker.state)) return;
+      worker.removeEventListener("statechange", done);
+      resolve();
     };
-    worker.addEventListener("statechange", done, { once: true });
+    worker.addEventListener("statechange", done);
     window.setTimeout(resolve, 2500);
   });
 }
 
-function showUpdateAvailableToast() {
+async function handleUpdateReady(worker, manual = false) {
+  const updateVersion = await requestServiceWorkerVersion(worker);
+  if (!isNewerAppVersion(updateVersion)) {
+    pendingServiceWorker = null;
+    localStorage.removeItem(UPDATE_KEYS.availableVersion);
+    renderUpdateSettings();
+    if (manual) showToast("CatatKas sudah menggunakan versi terbaru.", "success");
+    return false;
+  }
+
+  pendingServiceWorker = worker;
+  localStorage.setItem(UPDATE_KEYS.availableVersion, updateVersion);
+  renderUpdateSettings();
+
+  if (manual || shouldShowUpdatePrompt(updateVersion)) {
+    showUpdateModal(updateVersion);
+  }
+  return true;
+}
+
+function requestServiceWorkerVersion(worker) {
+  return new Promise((resolve) => {
+    if (!worker) {
+      resolve(localStorage.getItem(UPDATE_KEYS.availableVersion) || APP_VERSION);
+      return;
+    }
+
+    const channel = new MessageChannel();
+    const timer = window.setTimeout(() => {
+      channel.port1.onmessage = null;
+      resolve(localStorage.getItem(UPDATE_KEYS.availableVersion) || "baru");
+    }, 800);
+
+    channel.port1.onmessage = (event) => {
+      window.clearTimeout(timer);
+      resolve(event.data?.version || "baru");
+    };
+
+    worker.postMessage({ type: "CHECK_UPDATE" }, [channel.port2]);
+  });
+}
+
+function showUpdateModal(updateVersion) {
+  const content = document.createElement("div");
+  content.className = "modal-dynamic-content update-modal-content";
+
+  const note = document.createElement("p");
+  note.className = "helper-text";
+  note.textContent = "Update hanya memperbarui aplikasi. Data transaksi tetap tersimpan di perangkat Anda.";
+
+  const versionText = document.createElement("p");
+  versionText.className = "helper-text";
+  versionText.textContent = `Versi saat ini: v${APP_VERSION}. Versi baru: v${updateVersion}.`;
+
+  const actions = document.createElement("div");
+  actions.className = "update-modal-actions";
+
+  const installButton = document.createElement("button");
+  installButton.type = "button";
+  installButton.className = "primary-button";
+  installButton.textContent = "Install Sekarang";
+  installButton.addEventListener("click", () => {
+    closeModal(true);
+    applyAppUpdate();
+  });
+
+  const remindButton = document.createElement("button");
+  remindButton.type = "button";
+  remindButton.className = "ghost-button";
+  remindButton.textContent = "Ingatkan Nanti";
+  remindButton.addEventListener("click", () => {
+    remindUpdateLater(updateVersion);
+    closeModal(false);
+  });
+
+  const ignoreButton = document.createElement("button");
+  ignoreButton.type = "button";
+  ignoreButton.className = "ghost-button muted-button";
+  ignoreButton.textContent = "Abaikan";
+  ignoreButton.addEventListener("click", () => {
+    ignoreUpdate(updateVersion);
+    closeModal(false);
+  });
+
+  actions.append(installButton, remindButton, ignoreButton);
+  content.append(versionText, note, actions);
+
+  openModal({
+    title: "Update CatatKas Tersedia",
+    message: "Versi baru CatatKas tersedia. Update ini dapat berisi perbaikan tampilan, peningkatan fitur, atau perbaikan bug. Data keuangan Anda tetap aman di perangkat ini.",
+    confirmText: "",
+    cancelText: "",
+    type: "info",
+    icon: "↑",
+    content
+  });
+}
+
+function applyAppUpdate() {
+  if (!navigator.onLine) {
+    showToast("Hubungkan internet untuk memperbarui CatatKas.", "warning");
+    return;
+  }
+
+  const worker = pendingServiceWorker || serviceWorkerRegistration?.waiting;
+  if (!worker) {
+    showToast("Update belum siap diterapkan. Coba cek update lagi.", "warning");
+    return;
+  }
+
+  localStorage.setItem(UPDATE_KEYS.successPending, "1");
+  worker.postMessage({ type: "SKIP_WAITING" });
+}
+
+function remindUpdateLater(updateVersion) {
+  const oneDay = 24 * 60 * 60 * 1000;
+  localStorage.setItem(UPDATE_KEYS.remindLaterUntil, String(Date.now() + oneDay));
+  localStorage.setItem(UPDATE_KEYS.availableVersion, updateVersion);
+  showToast("CatatKas akan mengingatkan update lagi besok.", "info");
+  renderUpdateSettings();
+}
+
+function ignoreUpdate(updateVersion) {
+  localStorage.setItem(UPDATE_KEYS.ignoredVersion, updateVersion);
+  localStorage.setItem(UPDATE_KEYS.availableVersion, updateVersion);
+  showToast("Update ini diabaikan. Anda tetap bisa cek update dari Pengaturan.", "info");
+  renderUpdateSettings();
+}
+
+function shouldShowUpdatePrompt(updateVersion) {
+  if (!navigator.onLine) return false;
+  if (!isNewerAppVersion(updateVersion)) return false;
+  const remindLaterUntil = Number(localStorage.getItem(UPDATE_KEYS.remindLaterUntil) || 0);
+  if (remindLaterUntil > Date.now()) return false;
+  return localStorage.getItem(UPDATE_KEYS.ignoredVersion) !== updateVersion;
+}
+
+function renderUpdateSettings(options = {}) {
+  const availableVersion = localStorage.getItem(UPDATE_KEYS.availableVersion);
+  const hasUpdate = Boolean(pendingServiceWorker && availableVersion && isNewerAppVersion(availableVersion));
+  elements.updateAppName.textContent = `CatatKas v${APP_VERSION}`;
+  elements.appVersionLabel.textContent = APP_VERSION;
+
+  if (options.checking) {
+    elements.updateStatusText.textContent = "Mengecek update...";
+    elements.updateNowButton.hidden = true;
+    return;
+  }
+
+  elements.updateStatusText.textContent = hasUpdate
+    ? `Versi baru tersedia: v${availableVersion}`
+    : "Menggunakan versi terbaru";
+  elements.updateNowButton.hidden = !hasUpdate;
+}
+
+function isNewerAppVersion(version) {
+  if (!version || version === "baru") return version === "baru";
+  const current = parseVersion(APP_VERSION);
+  const candidate = parseVersion(version);
+  if (!current || !candidate) return version !== APP_VERSION;
+
+  for (let index = 0; index < Math.max(current.length, candidate.length); index += 1) {
+    const currentPart = current[index] || 0;
+    const candidatePart = candidate[index] || 0;
+    if (candidatePart > currentPart) return true;
+    if (candidatePart < currentPart) return false;
+  }
+  return false;
+}
+
+function parseVersion(version) {
+  const parts = String(version).split(".").map((part) => Number(part));
+  if (parts.some((part) => Number.isNaN(part))) return null;
+  return parts;
+}
+
+function showUpdateSuccessToastIfNeeded() {
+  const successPending = localStorage.getItem(UPDATE_KEYS.successPending) === "1";
+  localStorage.setItem(UPDATE_KEYS.currentVersion, APP_VERSION);
+  if (!successPending) return;
+
+  localStorage.removeItem(UPDATE_KEYS.successPending);
+  localStorage.removeItem(UPDATE_KEYS.availableVersion);
+  localStorage.removeItem(UPDATE_KEYS.remindLaterUntil);
+  localStorage.removeItem(UPDATE_KEYS.ignoredVersion);
+  window.setTimeout(() => showToast("CatatKas berhasil diperbarui.", "success"), 300);
+}
+
+function showUpdateAvailableToast(updateVersion) {
   if (updateToastElement?.isConnected) return;
 
   const toast = document.createElement("div");
@@ -1263,7 +1494,7 @@ function showUpdateAvailableToast() {
   toast.setAttribute("role", "status");
 
   const message = document.createElement("strong");
-  message.textContent = "Update CatatKas tersedia.";
+  message.textContent = `Update CatatKas tersedia${updateVersion ? `: v${updateVersion}` : ""}.`;
 
   const actions = document.createElement("div");
   actions.className = "toast-actions";
@@ -1287,16 +1518,6 @@ function showUpdateAvailableToast() {
   toast.append(message, actions);
   elements.toastContainer.appendChild(toast);
   updateToastElement = toast;
-}
-
-function applyAppUpdate() {
-  const worker = pendingServiceWorker || serviceWorkerRegistration?.waiting;
-  if (!worker) {
-    showToast("Update belum siap diterapkan. Coba cek update lagi.", "warning");
-    return;
-  }
-
-  worker.postMessage({ type: "SKIP_WAITING" });
 }
 
 function getMonthTransactions() {

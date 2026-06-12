@@ -277,16 +277,30 @@
           </div>
         </section>
 
+        <section class="settings-card panel update-card">
+          <div class="settings-heading">
+            <h2>Update Aplikasi</h2>
+            <p class="helper-text">Update hanya memperbarui file aplikasi. Data transaksi tetap tersimpan di perangkat Anda.</p>
+          </div>
+          <div class="update-info">
+            <strong id="updateAppName">CatatKas v1.0.1</strong>
+            <span>Status: <b id="updateStatusText">Menggunakan versi terbaru</b></span>
+          </div>
+          <div class="settings-actions update-actions">
+            <button type="button" class="ghost-button compact-action" id="checkUpdateButton">Cek Update</button>
+            <button type="button" class="primary-button compact-action" id="updateNowButton" hidden>Update Sekarang</button>
+          </div>
+        </section>
+
         <section class="settings-card panel about-card">
           <div class="settings-heading">
             <h2>Tentang Aplikasi</h2>
           </div>
           <div class="about-list">
             <div><span>Nama aplikasi</span><strong>CatatKas</strong></div>
-            <div><span>Versi aplikasi saat ini</span><strong id="appVersionLabel">1.0.0</strong></div>
+            <div><span>Versi aplikasi saat ini</span><strong id="appVersionLabel">1.0.1</strong></div>
             <p class="helper-text">Data disimpan secara lokal di perangkat menggunakan localStorage.</p>
           </div>
-          <button type="button" class="ghost-button" id="checkUpdateButton">Cek Update</button>
         </section>
       </section>
     </main>
