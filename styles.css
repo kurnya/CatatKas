@@ -10,6 +10,8 @@
   --soft: #eef6f4;
   --income: #047857;
   --expense: #dc2626;
+  --warning: #f59e0b;
+  --info: #0891b2;
   --transfer: #6d28d9;
   --shadow: 0 10px 22px rgba(16, 32, 28, 0.07);
   --shadow-soft: 0 6px 16px rgba(16, 32, 28, 0.05);
@@ -293,6 +295,10 @@ select:focus {
   background: rgba(16, 32, 28, 0.46);
 }
 
+.app-modal-overlay {
+  animation: fadeIn 160ms ease;
+}
+
 .bottom-sheet {
   position: fixed;
   right: 0;
@@ -390,28 +396,200 @@ select:focus {
   border-top: 1px solid var(--line);
 }
 
-.install-modal {
+.toast-container {
+  position: fixed;
+  right: 12px;
+  bottom: calc(84px + env(safe-area-inset-bottom));
+  left: 12px;
+  z-index: 70;
+  display: grid;
+  gap: 8px;
+  pointer-events: none;
+}
+
+.toast {
+  display: grid;
+  gap: 2px;
+  width: min(420px, 100%);
+  margin: 0 auto;
+  padding: 11px 13px 11px 14px;
+  border: 1px solid var(--line);
+  border-left: 5px solid var(--brand);
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 12px 26px rgba(16, 32, 28, 0.12);
+  color: var(--text);
+  font-size: 0.88rem;
+  font-weight: 850;
+  line-height: 1.35;
+  pointer-events: auto;
+  animation: toastIn 180ms ease;
+}
+
+.toast.success {
+  border-left-color: var(--income);
+}
+
+.toast.warning {
+  border-left-color: var(--warning);
+}
+
+.toast.danger,
+.toast.error {
+  border-left-color: var(--expense);
+}
+
+.toast.info {
+  border-left-color: var(--info);
+}
+
+.toast.update-toast {
+  gap: 9px;
+}
+
+.toast-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.toast-actions button {
+  min-height: 34px;
+  border-radius: 11px;
+  padding: 6px 10px;
+  font-size: 0.78rem;
+}
+
+.toast-actions .primary-button,
+.toast-actions .ghost-button {
+  width: auto;
+}
+
+.app-modal {
   position: fixed;
   right: 16px;
   left: 16px;
   top: 50%;
   z-index: 50;
+  display: grid;
+  gap: 12px;
   width: min(420px, calc(100% - 32px));
   margin: 0 auto;
   border: 1px solid var(--line);
   border-radius: 20px;
   background: #fff;
   box-shadow: 0 22px 46px rgba(16, 32, 28, 0.2);
+  padding: 18px;
   transform: translateY(-50%) scale(0.96);
   opacity: 0;
   pointer-events: none;
   transition: opacity 160ms ease, transform 160ms ease;
 }
 
-.install-modal.open {
+.app-modal.open {
   opacity: 1;
   pointer-events: auto;
   transform: translateY(-50%) scale(1);
+}
+
+.modal-close-button {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #f7faf9;
+  color: var(--text);
+  cursor: pointer;
+  font-weight: 950;
+}
+
+.modal-status-icon {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 14px;
+  background: var(--soft);
+  color: var(--brand-dark);
+  font-weight: 950;
+}
+
+.app-modal.danger .modal-status-icon {
+  background: #fef2f2;
+  color: var(--expense);
+}
+
+.app-modal.warning .modal-status-icon {
+  background: #fffbeb;
+  color: #b45309;
+}
+
+.app-modal.info .modal-status-icon {
+  background: #ecfeff;
+  color: var(--info);
+}
+
+.modal-copy {
+  display: grid;
+  gap: 5px;
+  padding-right: 32px;
+}
+
+.modal-copy h2 {
+  font-size: 1.08rem;
+}
+
+.modal-copy p:last-child,
+.modal-dynamic-content p {
+  color: var(--muted);
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.modal-dynamic-content {
+  display: grid;
+  gap: 10px;
+}
+
+.modal-field {
+  display: grid;
+  gap: 6px;
+}
+
+.modal-field span {
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 850;
+}
+
+.modal-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 9px;
+  padding-top: 2px;
+}
+
+.modal-actions .primary-button,
+.modal-actions .ghost-button {
+  width: 100%;
+  min-height: 44px;
+}
+
+.modal-actions .danger-button {
+  width: 100%;
+}
+
+.install-steps {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0 0 0 20px;
+  color: var(--text);
+  font-size: 0.92rem;
+  line-height: 1.45;
 }
 
 .modal-header {
@@ -420,24 +598,6 @@ select:focus {
   justify-content: space-between;
   gap: 12px;
   padding: 16px 16px 10px;
-}
-
-.install-steps {
-  display: grid;
-  gap: 10px;
-  margin: 0;
-  padding: 4px 18px 18px 36px;
-  color: var(--text);
-  font-size: 0.92rem;
-  line-height: 1.45;
-}
-
-.install-message {
-  margin: 0;
-  padding: 4px 18px 18px;
-  color: var(--muted);
-  font-size: 0.92rem;
-  line-height: 1.45;
 }
 
 .primary-button,
@@ -500,6 +660,14 @@ select:focus {
   padding: 9px 13px;
   cursor: pointer;
   font-weight: 900;
+}
+
+.primary-button.danger-action {
+  background: var(--expense);
+}
+
+.primary-button.warning-action {
+  background: var(--warning);
 }
 
 .file-button input {
@@ -854,5 +1022,25 @@ select:focus {
   .transaction-form label:last-of-type,
   .transaction-form .form-actions {
     grid-column: 1 / -1;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes toastIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }

@@ -58,7 +58,7 @@
 
       <section class="page" id="addPage" data-title="Tambah Transaksi">
         <button class="text-button back-button" data-nav="home">Kembali</button>
-        <form id="transactionForm" class="panel transaction-form">
+        <form id="transactionForm" class="panel transaction-form" novalidate>
           <input type="hidden" id="transactionId">
 
           <label>
@@ -283,9 +283,10 @@
           </div>
           <div class="about-list">
             <div><span>Nama aplikasi</span><strong>CatatKas</strong></div>
-            <div><span>Versi</span><strong>1.0.0</strong></div>
+            <div><span>Versi aplikasi saat ini</span><strong id="appVersionLabel">1.0.0</strong></div>
             <p class="helper-text">Data disimpan secara lokal di perangkat menggunakan localStorage.</p>
           </div>
+          <button type="button" class="ghost-button" id="checkUpdateButton">Cek Update</button>
         </section>
       </section>
     </main>
@@ -319,22 +320,22 @@
       </div>
     </aside>
 
-    <div class="modal-overlay" id="installGuideOverlay" hidden></div>
-    <section class="install-modal" id="installGuideModal" aria-hidden="true" aria-label="Panduan install aplikasi">
-      <div class="modal-header">
-        <div>
-          <p class="eyebrow">Install PWA</p>
-          <h2 id="installGuideTitle">Tambahkan ke Home Screen</h2>
-        </div>
-        <button type="button" class="close-sheet-button" id="closeInstallGuideButton" aria-label="Tutup panduan install">x</button>
+    <div class="toast-container" id="toastContainer" aria-live="polite" aria-atomic="true"></div>
+
+    <div class="modal-overlay app-modal-overlay" id="appModalOverlay" hidden></div>
+    <section class="app-modal" id="appModal" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="appModalTitle" aria-describedby="appModalMessage">
+      <button type="button" class="modal-close-button" id="appModalClose" aria-label="Tutup modal">x</button>
+      <div class="modal-status-icon" id="appModalIcon" aria-hidden="true">i</div>
+      <div class="modal-copy">
+        <p class="eyebrow" id="appModalEyebrow">CatatKas</p>
+        <h2 id="appModalTitle">Konfirmasi</h2>
+        <p id="appModalMessage">Lanjutkan aksi ini?</p>
       </div>
-      <ol class="install-steps" id="iosInstallSteps">
-        <li>Buka aplikasi ini di Safari.</li>
-        <li>Tekan tombol Share / Bagikan.</li>
-        <li>Pilih Add to Home Screen / Tambahkan ke Layar Utama.</li>
-        <li>Tekan Add / Tambah.</li>
-      </ol>
-      <p class="install-message" id="unsupportedInstallMessage" hidden>Browser ini belum mendukung install otomatis. Jika tersedia, gunakan menu browser untuk menambahkan aplikasi ke layar utama.</p>
+      <div class="modal-dynamic-content" id="appModalContent"></div>
+      <div class="modal-actions">
+        <button type="button" class="ghost-button" id="appModalCancel">Batal</button>
+        <button type="button" class="primary-button" id="appModalConfirm">Konfirmasi</button>
+      </div>
     </section>
 
     <button class="fab" id="addTransactionButton">+ Tambah Transaksi</button>

@@ -1,11 +1,11 @@
 {
   "name": "CatatKas",
   "short_name": "CatatKas",
-  "description": "Aplikasi PWA ringan untuk mencatat pemasukan dan pengeluaran harian.",
+  "description": "Aplikasi pencatat keuangan pribadi berbasis PWA",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#f6f7f4",
+  "background_color": "#f4f6f5",
   "theme_color": "#0f766e",
   "icons": [
     {

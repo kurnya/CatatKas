@@ -1,5 +1,6 @@
 const STORAGE_KEY = "catatan_keuangan_pwa_v1";
 const PREFERENCES_KEY = "catatan_keuangan_preferences_v1";
+const APP_VERSION = "1.0.0";
 
 const defaults = {
   types: ["Pemasukan", "Pengeluaran", "Transfer"],
@@ -25,6 +26,12 @@ const pageMap = {
 const state = loadState();
 const preferences = loadPreferences();
 let deferredPrompt = null;
+let activeModalResolve = null;
+let lastFocusedElement = null;
+let serviceWorkerRegistration = null;
+let pendingServiceWorker = null;
+let refreshingForUpdate = false;
+let updateToastElement = null;
 let activeFilters = {
   category: "Semua",
   payment: "Semua"
@@ -36,12 +43,17 @@ const elements = {
   pages: document.querySelectorAll(".page"),
   navItems: document.querySelectorAll(".nav-item"),
   installButton: document.querySelector("#installButton"),
-  installGuideOverlay: document.querySelector("#installGuideOverlay"),
-  installGuideModal: document.querySelector("#installGuideModal"),
-  installGuideTitle: document.querySelector("#installGuideTitle"),
-  iosInstallSteps: document.querySelector("#iosInstallSteps"),
-  unsupportedInstallMessage: document.querySelector("#unsupportedInstallMessage"),
-  closeInstallGuideButton: document.querySelector("#closeInstallGuideButton"),
+  toastContainer: document.querySelector("#toastContainer"),
+  appModalOverlay: document.querySelector("#appModalOverlay"),
+  appModal: document.querySelector("#appModal"),
+  appModalClose: document.querySelector("#appModalClose"),
+  appModalIcon: document.querySelector("#appModalIcon"),
+  appModalEyebrow: document.querySelector("#appModalEyebrow"),
+  appModalTitle: document.querySelector("#appModalTitle"),
+  appModalMessage: document.querySelector("#appModalMessage"),
+  appModalContent: document.querySelector("#appModalContent"),
+  appModalCancel: document.querySelector("#appModalCancel"),
+  appModalConfirm: document.querySelector("#appModalConfirm"),
   summaryMonth: document.querySelector("#summaryMonth"),
   historyMonth: document.querySelector("#historyMonth"),
   activeMonthLabel: document.querySelector("#activeMonthLabel"),
@@ -88,7 +100,9 @@ const elements = {
   preferenceCurrency: document.querySelector("#preferenceCurrency"),
   preferenceDateFormat: document.querySelector("#preferenceDateFormat"),
   preferenceTheme: document.querySelector("#preferenceTheme"),
-  preferenceDefaultPayment: document.querySelector("#preferenceDefaultPayment")
+  preferenceDefaultPayment: document.querySelector("#preferenceDefaultPayment"),
+  appVersionLabel: document.querySelector("#appVersionLabel"),
+  checkUpdateButton: document.querySelector("#checkUpdateButton")
 };
 
 init();
@@ -135,9 +149,7 @@ function bindEvents() {
   elements.filterOverlay.addEventListener("click", closeFilterSheet);
   elements.resetFilterButton.addEventListener("click", resetDraftFilters);
   elements.applyFilterButton.addEventListener("click", applyDraftFilters);
-  document.addEventListener("keydown", (event) => {
-    if (event.key === "Escape") closeFilterSheet();
-  });
+  document.addEventListener("keydown", handleGlobalKeydown);
   elements.exportButton.addEventListener("click", exportBackup);
   elements.exportCsvButton.addEventListener("click", exportCsv);
   elements.importFile.addEventListener("change", importBackup);
@@ -147,6 +159,7 @@ function bindEvents() {
   elements.preferenceDateFormat.addEventListener("change", savePreferencesFromForm);
   elements.preferenceTheme.addEventListener("change", savePreferencesFromForm);
   elements.preferenceDefaultPayment.addEventListener("change", savePreferencesFromForm);
+  elements.checkUpdateButton.addEventListener("click", () => checkForAppUpdate(true));
 
   document.querySelectorAll("[data-quick-date]").forEach((button) => {
     button.addEventListener("click", () => {
@@ -172,8 +185,9 @@ function bindEvents() {
   });
 
   elements.installButton.addEventListener("click", installApp);
-  elements.installGuideOverlay.addEventListener("click", closeInstallGuide);
-  elements.closeInstallGuideButton.addEventListener("click", closeInstallGuide);
+  elements.appModalOverlay.addEventListener("click", () => closeModal(false));
+  elements.appModalClose.addEventListener("click", () => closeModal(false));
+  elements.appModalCancel.addEventListener("click", () => closeModal(false));
   elements.installButton.hidden = true;
   updateInstallButtonVisibility();
   window.addEventListener("beforeinstallprompt", (event) => {
@@ -190,7 +204,8 @@ function bindEvents() {
   window.addEventListener("appinstalled", () => {
     deferredPrompt = null;
     elements.installButton.hidden = true;
-    closeInstallGuide();
+    closeModal(false);
+    showToast("Aplikasi berhasil diinstall", "success");
   });
 }
 
@@ -278,11 +293,37 @@ function fillSelect(select, values) {
 
 function saveTransaction(event) {
   event.preventDefault();
+  const amount = Number(elements.amount.value);
+  if (!elements.amount.value) {
+    showToast("Nominal wajib diisi.", "warning");
+    return;
+  }
+  if (amount <= 0) {
+    showToast("Nominal harus lebih dari 0.", "warning");
+    return;
+  }
+  if (!elements.date.value) {
+    showToast("Tanggal transaksi wajib diisi.", "warning");
+    return;
+  }
+  if (!elements.type.value || !elements.category.value) {
+    showToast("Kategori belum dipilih.", "warning");
+    return;
+  }
+  if (!elements.subCategory.value || !isValidSubCategory(elements.type.value, elements.subCategory.value)) {
+    showToast("Subkategori belum dipilih.", "warning");
+    return;
+  }
+  if (!elements.paymentMethod.value) {
+    showToast("Metode pembayaran belum dipilih.", "warning");
+    return;
+  }
+
   const transaction = {
     id: elements.id.value || crypto.randomUUID(),
     date: elements.date.value,
     type: elements.type.value,
-    amount: Number(elements.amount.value),
+    amount,
     category: elements.type.value,
     subCategory: elements.subCategory.value,
     paymentMethod: elements.paymentMethod.value,
@@ -290,16 +331,13 @@ function saveTransaction(event) {
     updatedAt: new Date().toISOString()
   };
 
-  if (!transaction.date || !transaction.type || !transaction.category || !isValidSubCategory(transaction.type, transaction.subCategory) || !transaction.paymentMethod || transaction.amount <= 0) {
-    alert("Lengkapi transaksi dengan nominal lebih dari 0.");
-    return;
-  }
-
   const index = state.transactions.findIndex((item) => item.id === transaction.id);
   if (index >= 0) {
     state.transactions[index] = { ...state.transactions[index], ...transaction };
+    showToast("Transaksi berhasil diperbarui.", "success");
   } else {
     state.transactions.push({ ...transaction, createdAt: new Date().toISOString() });
+    showToast("Transaksi berhasil disimpan.", "success");
   }
 
   persist();
@@ -367,6 +405,230 @@ function closeFilterSheet() {
   elements.filterSheet.setAttribute("aria-hidden", "true");
   elements.filterOverlay.hidden = true;
   document.body.classList.remove("sheet-open");
+}
+
+function handleGlobalKeydown(event) {
+  if (event.key === "Escape") {
+    if (!elements.appModalOverlay.hidden) {
+      closeModal(false);
+      return;
+    }
+    closeFilterSheet();
+  }
+
+  if (event.key === "Tab" && !elements.appModalOverlay.hidden) {
+    trapModalFocus(event);
+  }
+}
+
+function showToast(message, type = "info") {
+  const toast = document.createElement("div");
+  const status = ["success", "warning", "danger", "error", "info"].includes(type) ? type : "info";
+  toast.className = `toast ${status}`;
+  toast.setAttribute("role", status === "danger" || status === "error" ? "alert" : "status");
+  toast.textContent = message;
+  elements.toastContainer.appendChild(toast);
+
+  window.setTimeout(() => {
+    toast.style.opacity = "0";
+    toast.style.transform = "translateY(10px)";
+    toast.style.transition = "opacity 150ms ease, transform 150ms ease";
+    window.setTimeout(() => toast.remove(), 180);
+  }, 2600);
+}
+
+function showConfirmModal(options = {}) {
+  const {
+    title = "Konfirmasi",
+    message = "Lanjutkan aksi ini?",
+    confirmText = "Konfirmasi",
+    cancelText = "Batal",
+    type = "info",
+    eyebrow = "CatatKas",
+    icon,
+    content = null
+  } = options;
+
+  return openModal({
+    title,
+    message,
+    confirmText,
+    cancelText,
+    type,
+    eyebrow,
+    icon,
+    content,
+    onConfirm: () => true
+  });
+}
+
+function showFormModal(options = {}) {
+  const {
+    title = "Isi Data",
+    message = "",
+    confirmText = "Simpan",
+    cancelText = "Batal",
+    type = "info",
+    fields = [],
+    validate
+  } = options;
+
+  const form = document.createElement("form");
+  form.className = "modal-dynamic-content";
+  form.noValidate = true;
+  fields.forEach((field) => {
+    const label = document.createElement("label");
+    label.className = "modal-field";
+    const labelText = document.createElement("span");
+    labelText.textContent = field.label;
+    const control = field.type === "select" ? document.createElement("select") : document.createElement("input");
+    control.name = field.name;
+    control.value = field.value || "";
+    control.required = Boolean(field.required);
+    if (field.placeholder) control.placeholder = field.placeholder;
+    if (field.type && field.type !== "select") control.type = field.type;
+    if (field.type === "select") {
+      (field.options || []).forEach((option) => {
+        const item = document.createElement("option");
+        item.value = option;
+        item.textContent = option;
+        control.appendChild(item);
+      });
+      if (field.value) control.value = field.value;
+    }
+    label.append(labelText, control);
+    form.appendChild(label);
+  });
+
+  return openModal({
+    title,
+    message,
+    confirmText,
+    cancelText,
+    type,
+    content: form,
+    onConfirm: () => {
+      const values = Object.fromEntries(new FormData(form).entries());
+      if (typeof validate === "function") {
+        const validationMessage = validate(values);
+        if (validationMessage) {
+          showToast(validationMessage, "warning");
+          return null;
+        }
+      }
+      return values;
+    }
+  });
+}
+
+function showInstallGuideModal(mode = "unsupported") {
+  const iosMode = mode === "ios";
+  const content = document.createElement("div");
+  content.className = "modal-dynamic-content";
+
+  if (iosMode) {
+    const steps = document.createElement("ol");
+    steps.className = "install-steps";
+    [
+      "Buka CatatKas menggunakan Safari.",
+      "Tekan tombol Share / Bagikan.",
+      "Pilih Add to Home Screen / Tambahkan ke Layar Utama.",
+      "Tekan Add / Tambah."
+    ].forEach((step) => {
+      const item = document.createElement("li");
+      item.textContent = step;
+      steps.appendChild(item);
+    });
+    content.appendChild(steps);
+  } else {
+    const message = document.createElement("p");
+    message.textContent = "Browser ini belum mendukung install otomatis. Coba gunakan Chrome atau tambahkan aplikasi melalui menu browser.";
+    content.appendChild(message);
+  }
+
+  return showConfirmModal({
+    title: iosMode ? "Panduan Install" : "Install Belum Didukung",
+    message: iosMode ? "Ikuti langkah berikut untuk menambahkan CatatKas ke layar utama." : "CatatKas tetap bisa digunakan dari browser ini.",
+    confirmText: "Mengerti",
+    cancelText: "Tutup",
+    type: "info",
+    icon: "i",
+    content
+  });
+}
+
+function openModal(options) {
+  closeModal(false, true);
+
+  const type = ["danger", "warning", "info", "success"].includes(options.type) ? options.type : "info";
+  lastFocusedElement = document.activeElement;
+  elements.appModal.className = `app-modal ${type}`;
+  elements.appModalIcon.textContent = options.icon || modalIcon(type);
+  elements.appModalEyebrow.textContent = options.eyebrow || "CatatKas";
+  elements.appModalTitle.textContent = options.title;
+  elements.appModalMessage.textContent = options.message;
+  elements.appModalCancel.textContent = options.cancelText;
+  elements.appModalConfirm.textContent = options.confirmText;
+  elements.appModalConfirm.className = `primary-button${type === "danger" ? " danger-action" : ""}${type === "warning" ? " warning-action" : ""}`;
+  elements.appModalContent.innerHTML = "";
+  if (options.content) elements.appModalContent.appendChild(options.content);
+  elements.appModalCancel.hidden = options.cancelText === "";
+  elements.appModalOverlay.hidden = false;
+  elements.appModal.classList.add("open");
+  elements.appModal.setAttribute("aria-hidden", "false");
+  document.body.classList.add("sheet-open");
+
+  return new Promise((resolve) => {
+    activeModalResolve = resolve;
+    elements.appModalConfirm.onclick = () => {
+      const result = options.onConfirm ? options.onConfirm() : true;
+      if (result === null) return;
+      closeModal(result);
+    };
+    window.setTimeout(() => getFocusableModalElements()[0]?.focus(), 0);
+  });
+}
+
+function closeModal(result = false, silent = false) {
+  if (elements.appModalOverlay.hidden) return;
+  elements.appModal.classList.remove("open");
+  elements.appModal.setAttribute("aria-hidden", "true");
+  elements.appModalOverlay.hidden = true;
+  document.body.classList.remove("sheet-open");
+  elements.appModalConfirm.onclick = null;
+
+  const resolver = activeModalResolve;
+  activeModalResolve = null;
+  if (resolver && !silent) resolver(result);
+  if (lastFocusedElement && typeof lastFocusedElement.focus === "function") {
+    lastFocusedElement.focus();
+  }
+}
+
+function trapModalFocus(event) {
+  const focusable = getFocusableModalElements();
+  if (!focusable.length) return;
+  const first = focusable[0];
+  const last = focusable[focusable.length - 1];
+  if (event.shiftKey && document.activeElement === first) {
+    event.preventDefault();
+    last.focus();
+  } else if (!event.shiftKey && document.activeElement === last) {
+    event.preventDefault();
+    first.focus();
+  }
+}
+
+function getFocusableModalElements() {
+  return [...elements.appModal.querySelectorAll("button:not([hidden]), input, select, textarea, [tabindex]:not([tabindex='-1'])")]
+    .filter((item) => !item.disabled && item.offsetParent !== null);
+}
+
+function modalIcon(type) {
+  if (type === "danger") return "!";
+  if (type === "warning") return "!";
+  if (type === "success") return "✓";
+  return "i";
 }
 
 function resetDraftFilters() {
@@ -516,7 +778,7 @@ function renderSubCategoryMasterList() {
   });
 }
 
-function addMasterItem(key) {
+async function addMasterItem(key) {
   if (key === "subCategories") {
     addSubCategoryItem();
     return;
@@ -525,84 +787,143 @@ function addMasterItem(key) {
     addMainCategory();
     return;
   }
-  const name = prompt("Nama item baru:");
-  if (!name || !name.trim()) return;
-  const clean = name.trim();
-  if (!state[key].includes(clean)) state[key].push(clean);
+  const result = await showFormModal({
+    title: "Tambah Metode Pembayaran",
+    message: "Masukkan nama metode pembayaran baru.",
+    confirmText: "Tambah",
+    type: "info",
+    fields: [{ name: "name", label: "Nama item", required: true, placeholder: "Contoh: Mandiri" }],
+    validate: ({ name }) => validateMasterName(key, name)
+  });
+  if (!result) return;
+  state[key].push(result.name.trim());
   persist();
   renderAll();
+  showToast("Master data berhasil ditambahkan.", "success");
 }
 
-function editMasterItem(key, index) {
+async function editMasterItem(key, index) {
   if (key === "categories") return editMainCategory(index);
-  const name = prompt("Ubah nama item:", state[key][index]);
-  if (!name || !name.trim()) return;
-  state[key][index] = name.trim();
+  const oldName = state[key][index];
+  const result = await showFormModal({
+    title: "Edit Metode Pembayaran",
+    message: "Perbarui nama metode pembayaran.",
+    confirmText: "Simpan",
+    type: "info",
+    fields: [{ name: "name", label: "Nama item", value: oldName, required: true }],
+    validate: ({ name }) => validateMasterName(key, name, oldName)
+  });
+  if (!result) return;
+  state[key][index] = result.name.trim();
   persist();
   renderAll();
+  showToast("Master data berhasil diedit.", "success");
 }
 
-function deleteMasterItem(key, index) {
+async function deleteMasterItem(key, index) {
   if (key === "categories") return deleteMainCategory(index);
-  if (!confirm(`Hapus "${state[key][index]}"?`)) return;
+  const name = state[key][index];
+  const used = isMasterItemUsed(key, name);
+  const confirmed = await showConfirmModal({
+    title: "Hapus Metode Pembayaran?",
+    message: used ? `"${name}" sedang dipakai transaksi lama. Transaksi tetap disimpan, tetapi pilihan ini akan dihapus dari master data.` : `"${name}" akan dihapus dari master data.`,
+    confirmText: "Hapus",
+    cancelText: "Batal",
+    type: "danger"
+  });
+  if (!confirmed) return;
   state[key].splice(index, 1);
   persist();
   renderAll();
+  showToast("Master data berhasil dihapus.", "success");
 }
 
-function addSubCategoryItem() {
-  const type = prompt(`Pilih kategori utama:\n${state.types.join(" / ")}`, state.types[0]);
-  const cleanType = normalizeMainCategory(type, state.types);
-  if (!state.types.includes(cleanType)) {
-    alert("Kategori utama tidak valid.");
-    return;
-  }
-
-  const name = prompt(`Nama subkategori untuk ${cleanType}:`);
-  if (!name || !name.trim()) return;
-
-  const list = getSubCategoriesForType(cleanType);
-  const clean = name.trim();
-  if (!list.includes(clean)) state.subCategories[cleanType].push(clean);
+async function addSubCategoryItem() {
+  const result = await showFormModal({
+    title: "Tambah Subkategori",
+    message: "Pilih kategori utama lalu masukkan nama subkategori.",
+    confirmText: "Tambah",
+    type: "info",
+    fields: [
+      { name: "type", label: "Kategori utama", type: "select", options: state.types, value: state.types[0], required: true },
+      { name: "name", label: "Nama subkategori", required: true, placeholder: "Contoh: Internet" }
+    ],
+    validate: ({ type, name }) => validateSubCategoryName(type, name)
+  });
+  if (!result) return;
+  state.subCategories[result.type].push(result.name.trim());
   persist();
   renderAll();
+  showToast("Master data berhasil ditambahkan.", "success");
 }
 
-function editSubCategoryItem(type, index) {
+async function editSubCategoryItem(type, index) {
   const list = getSubCategoriesForType(type);
-  const name = prompt(`Ubah subkategori ${type}:`, list[index]);
-  if (!name || !name.trim()) return;
-  list[index] = name.trim();
+  const oldName = list[index];
+  const result = await showFormModal({
+    title: "Edit Subkategori",
+    message: `Perbarui subkategori ${type}.`,
+    confirmText: "Simpan",
+    type: "info",
+    fields: [{ name: "name", label: "Nama subkategori", value: oldName, required: true }],
+    validate: ({ name }) => validateSubCategoryName(type, name, oldName)
+  });
+  if (!result) return;
+  list[index] = result.name.trim();
   persist();
   renderAll();
+  showToast("Master data berhasil diedit.", "success");
 }
 
-function deleteSubCategoryItem(type, index) {
+async function deleteSubCategoryItem(type, index) {
   const list = getSubCategoriesForType(type);
-  if (!confirm(`Hapus "${list[index]}" dari ${type}?`)) return;
+  const name = list[index];
+  const used = isMasterItemUsed("subCategories", name, type);
+  const confirmed = await showConfirmModal({
+    title: "Hapus Subkategori?",
+    message: used ? `"${name}" sedang dipakai transaksi lama. Transaksi tetap disimpan, tetapi subkategori ini akan dihapus dari master data.` : `"${name}" akan dihapus dari ${type}.`,
+    confirmText: "Hapus",
+    cancelText: "Batal",
+    type: "danger"
+  });
+  if (!confirmed) return;
   list.splice(index, 1);
   persist();
   renderAll();
+  showToast("Master data berhasil dihapus.", "success");
 }
 
-function addMainCategory() {
-  const name = prompt("Nama kategori utama baru:");
-  if (!name || !name.trim()) return;
-  const clean = name.trim();
-  if (state.types.includes(clean)) return;
+async function addMainCategory() {
+  const result = await showFormModal({
+    title: "Tambah Kategori",
+    message: "Masukkan nama kategori utama baru.",
+    confirmText: "Tambah",
+    type: "info",
+    fields: [{ name: "name", label: "Nama kategori", required: true, placeholder: "Contoh: Investasi" }],
+    validate: ({ name }) => validateMasterName("types", name)
+  });
+  if (!result) return;
+  const clean = result.name.trim();
   state.types.push(clean);
   state.categories = structuredClone(state.types);
   state.subCategories[clean] = ["Lainnya"];
   persist();
   renderAll();
+  showToast("Master data berhasil ditambahkan.", "success");
 }
 
-function editMainCategory(index) {
+async function editMainCategory(index) {
   const oldName = state.types[index];
-  const name = prompt("Ubah kategori utama:", oldName);
-  if (!name || !name.trim()) return;
-  const clean = name.trim();
-  if (state.types.includes(clean) && clean !== oldName) return;
+  const result = await showFormModal({
+    title: "Edit Kategori",
+    message: "Perubahan nama kategori akan diterapkan pada transaksi terkait.",
+    confirmText: "Simpan",
+    type: "info",
+    fields: [{ name: "name", label: "Nama kategori", value: oldName, required: true }],
+    validate: ({ name }) => validateMasterName("types", name, oldName)
+  });
+  if (!result) return;
+  const clean = result.name.trim();
   state.types[index] = clean;
   state.categories = structuredClone(state.types);
   state.subCategories[clean] = state.subCategories[oldName] || ["Lainnya"];
@@ -613,20 +934,30 @@ function editMainCategory(index) {
   });
   persist();
   renderAll();
+  showToast("Master data berhasil diedit.", "success");
 }
 
-function deleteMainCategory(index) {
+async function deleteMainCategory(index) {
   const name = state.types[index];
   if (state.types.length <= 1) {
-    alert("Minimal harus ada satu kategori utama.");
+    showToast("Minimal harus ada satu kategori utama.", "warning");
     return;
   }
-  if (!confirm(`Hapus kategori utama "${name}"? Transaksi lama tetap disimpan.`)) return;
+  const used = isMasterItemUsed("types", name);
+  const confirmed = await showConfirmModal({
+    title: "Hapus Kategori?",
+    message: used ? `Kategori "${name}" sedang dipakai transaksi lama. Transaksi tetap disimpan, tetapi kategori ini akan dihapus dari master data.` : `Kategori "${name}" akan dihapus dari master data.`,
+    confirmText: "Hapus",
+    cancelText: "Batal",
+    type: "danger"
+  });
+  if (!confirmed) return;
   state.types.splice(index, 1);
   state.categories = structuredClone(state.types);
   delete state.subCategories[name];
   persist();
   renderAll();
+  showToast("Master data berhasil dihapus.", "success");
 }
 
 function editTransaction(id) {
@@ -645,11 +976,19 @@ function editTransaction(id) {
   navigate("add");
 }
 
-function deleteTransaction(id) {
-  if (!confirm("Hapus transaksi ini?")) return;
+async function deleteTransaction(id) {
+  const confirmed = await showConfirmModal({
+    title: "Hapus Transaksi?",
+    message: "Data transaksi ini akan dihapus permanen dari perangkat.",
+    confirmText: "Hapus",
+    cancelText: "Batal",
+    type: "danger"
+  });
+  if (!confirmed) return;
   state.transactions = state.transactions.filter((item) => item.id !== id);
   persist();
   renderAll();
+  showToast("Transaksi berhasil dihapus.", "success");
 }
 
 function resetForm() {
@@ -667,24 +1006,41 @@ function resetForm() {
   }
 }
 
-function resetMasterData() {
-  if (!confirm("Reset master data ke bawaan aplikasi?")) return;
+async function resetMasterData() {
+  const confirmed = await showConfirmModal({
+    title: "Reset Master Data?",
+    message: "Kategori, subkategori, dan metode pembayaran akan dikembalikan ke bawaan aplikasi.",
+    confirmText: "Reset",
+    cancelText: "Batal",
+    type: "danger"
+  });
+  if (!confirmed) return;
   state.types = structuredClone(defaults.types);
   state.categories = structuredClone(defaults.categories);
   state.subCategories = structuredClone(defaults.subCategories);
   state.paymentMethods = structuredClone(defaults.paymentMethods);
   persist();
   renderAll();
+  showToast("Master data berhasil direset.", "success");
 }
 
-function deleteAllTransactions() {
-  if (!confirm("Hapus semua transaksi? Data yang sudah dihapus tidak bisa dikembalikan kecuali dari backup.")) return;
+async function deleteAllTransactions() {
+  const confirmed = await showConfirmModal({
+    title: "Hapus Semua Transaksi?",
+    message: "Semua transaksi akan dihapus permanen dari perangkat kecuali Anda memiliki file backup.",
+    confirmText: "Hapus",
+    cancelText: "Batal",
+    type: "danger"
+  });
+  if (!confirmed) return;
   state.transactions = [];
   persist();
   renderAll();
+  showToast("Semua transaksi berhasil dihapus.", "success");
 }
 
 function renderPreferences() {
+  elements.appVersionLabel.textContent = APP_VERSION;
   elements.preferenceCurrency.value = preferences.currency;
   elements.preferenceDateFormat.value = preferences.dateFormat;
   elements.preferenceTheme.value = preferences.theme;
@@ -704,10 +1060,12 @@ function savePreferencesFromForm() {
   preferences.theme = elements.preferenceTheme.value;
   preferences.defaultPayment = elements.preferenceDefaultPayment.value;
   persistPreferences();
+  showToast("Preferensi berhasil disimpan.", "success");
 }
 
 function exportBackup() {
   downloadFile(`catatkas-${today()}.json`, JSON.stringify(state, null, 2), "application/json");
+  showToast("Data berhasil diexport.", "success");
 }
 
 function exportCsv() {
@@ -723,11 +1081,23 @@ function exportCsv() {
   ]);
   const csv = [header, ...rows].map((row) => row.map(csvCell).join(",")).join("\n");
   downloadFile(`transaksi-${today()}.csv`, csv, "text/csv;charset=utf-8");
+  showToast("Data berhasil diexport.", "success");
 }
 
-function importBackup(event) {
+async function importBackup(event) {
   const file = event.target.files[0];
   if (!file) return;
+  const confirmed = await showConfirmModal({
+    title: "Import Data?",
+    message: "Data dari file JSON akan dimuat ke CatatKas. Pastikan file backup valid.",
+    confirmText: "Import",
+    cancelText: "Batal",
+    type: "info"
+  });
+  if (!confirmed) {
+    event.target.value = "";
+    return;
+  }
 
   const reader = new FileReader();
   reader.onload = () => {
@@ -744,10 +1114,13 @@ function importBackup(event) {
       })) : [];
       persist();
       renderAll();
-      alert("Backup berhasil diimport.");
+      showToast("Data berhasil diimport.", "success");
     } catch {
-      alert("File backup tidak valid.");
+      showToast("File backup tidak valid.", "error");
     }
+  };
+  reader.onerror = () => {
+    showToast("File backup gagal dibaca.", "error");
   };
   reader.readAsText(file);
   event.target.value = "";
@@ -763,11 +1136,11 @@ async function installApp() {
     deferredPrompt.prompt();
     await deferredPrompt.userChoice;
     deferredPrompt = null;
-    elements.installButton.hidden = true;
+    elements.installButton.hidden = isRunningStandalone();
     return;
   }
 
-  openInstallGuide(isIOSDevice() ? "ios" : "unsupported");
+  showInstallGuideModal(isIOSDevice() ? "ios" : "unsupported");
 }
 
 function isRunningStandalone() {
@@ -791,28 +1164,139 @@ function updateInstallButtonVisibility() {
   elements.installButton.hidden = false;
 }
 
-function openInstallGuide(mode) {
-  const iosMode = mode === "ios";
-  elements.installGuideTitle.textContent = iosMode ? "Tambahkan ke Home Screen" : "Install belum didukung";
-  elements.iosInstallSteps.hidden = !iosMode;
-  elements.unsupportedInstallMessage.hidden = iosMode;
-  elements.installGuideOverlay.hidden = false;
-  elements.installGuideModal.classList.add("open");
-  elements.installGuideModal.setAttribute("aria-hidden", "false");
-  document.body.classList.add("sheet-open");
-}
-
-function closeInstallGuide() {
-  elements.installGuideModal.classList.remove("open");
-  elements.installGuideModal.setAttribute("aria-hidden", "true");
-  elements.installGuideOverlay.hidden = true;
-  document.body.classList.remove("sheet-open");
-}
-
 function registerServiceWorker() {
-  if ("serviceWorker" in navigator) {
-    navigator.serviceWorker.register("./service-worker.js", { scope: "./" }).catch(() => {});
+  if (!("serviceWorker" in navigator)) {
+    elements.checkUpdateButton.disabled = true;
+    return;
   }
+
+  navigator.serviceWorker.addEventListener("controllerchange", () => {
+    if (refreshingForUpdate) return;
+    refreshingForUpdate = true;
+    window.location.reload();
+  });
+
+  navigator.serviceWorker.register("./service-worker.js", { scope: "./" })
+    .then((registration) => {
+      serviceWorkerRegistration = registration;
+      if (registration.waiting) {
+        pendingServiceWorker = registration.waiting;
+        showUpdateAvailableToast();
+      }
+
+      registration.addEventListener("updatefound", () => {
+        const newWorker = registration.installing;
+        if (!newWorker) return;
+        newWorker.addEventListener("statechange", () => {
+          if (newWorker.state === "installed" && navigator.serviceWorker.controller) {
+            pendingServiceWorker = newWorker;
+            showUpdateAvailableToast();
+          }
+        });
+      });
+
+      checkForAppUpdate(false);
+    })
+    .catch(() => {
+      elements.checkUpdateButton.disabled = true;
+    });
+}
+
+async function checkForAppUpdate(manual = false) {
+  if (!("serviceWorker" in navigator)) {
+    if (manual) showToast("Browser ini belum mendukung pengecekan update PWA.", "warning");
+    return false;
+  }
+
+  const registration = serviceWorkerRegistration || await navigator.serviceWorker.getRegistration("./");
+  if (!registration) {
+    if (manual) showToast("Service worker belum aktif. Coba lagi setelah halaman dimuat ulang.", "warning");
+    return false;
+  }
+
+  serviceWorkerRegistration = registration;
+  if (registration.waiting || pendingServiceWorker) {
+    pendingServiceWorker = registration.waiting || pendingServiceWorker;
+    showUpdateAvailableToast();
+    return true;
+  }
+
+  try {
+    await registration.update();
+    await waitForUpdateCheck(registration);
+  } catch {
+    if (manual) showToast("Tidak bisa cek update saat ini. Periksa koneksi internet.", "warning");
+    return false;
+  }
+
+  if (registration.waiting || pendingServiceWorker) {
+    pendingServiceWorker = registration.waiting || pendingServiceWorker;
+    showUpdateAvailableToast();
+    return true;
+  }
+
+  if (manual) showToast("CatatKas sudah menggunakan versi terbaru.", "success");
+  return false;
+}
+
+function waitForUpdateCheck(registration) {
+  return new Promise((resolve) => {
+    const worker = registration.installing;
+    if (!worker) {
+      window.setTimeout(resolve, 400);
+      return;
+    }
+
+    const done = () => {
+      if (["installed", "activated", "redundant"].includes(worker.state)) resolve();
+    };
+    worker.addEventListener("statechange", done, { once: true });
+    window.setTimeout(resolve, 2500);
+  });
+}
+
+function showUpdateAvailableToast() {
+  if (updateToastElement?.isConnected) return;
+
+  const toast = document.createElement("div");
+  toast.className = "toast info update-toast";
+  toast.setAttribute("role", "status");
+
+  const message = document.createElement("strong");
+  message.textContent = "Update CatatKas tersedia.";
+
+  const actions = document.createElement("div");
+  actions.className = "toast-actions";
+
+  const laterButton = document.createElement("button");
+  laterButton.type = "button";
+  laterButton.className = "ghost-button";
+  laterButton.textContent = "Nanti";
+  laterButton.addEventListener("click", () => {
+    toast.remove();
+    updateToastElement = null;
+  });
+
+  const updateButton = document.createElement("button");
+  updateButton.type = "button";
+  updateButton.className = "primary-button";
+  updateButton.textContent = "Update Sekarang";
+  updateButton.addEventListener("click", applyAppUpdate);
+
+  actions.append(laterButton, updateButton);
+  toast.append(message, actions);
+  elements.toastContainer.appendChild(toast);
+  updateToastElement = toast;
+}
+
+function applyAppUpdate() {
+  const worker = pendingServiceWorker || serviceWorkerRegistration?.waiting;
+  if (!worker) {
+    showToast("Update belum siap diterapkan. Coba cek update lagi.", "warning");
+    return;
+  }
+
+  worker.postMessage({ type: "SKIP_WAITING" });
 }
 
 function getMonthTransactions() {
@@ -900,6 +1384,36 @@ function getSubCategoriesForType(type) {
 
 function isValidSubCategory(type, subCategory) {
   return getSubCategoriesForType(type).includes(subCategory);
+}
+
+function validateMasterName(key, name, currentName = "") {
+  const clean = String(name || "").trim();
+  if (!clean) return "Nama item wajib diisi.";
+  const list = key === "types" ? state.types : state[key];
+  if (list.includes(clean) && clean !== currentName) return "Nama item sudah ada.";
+  return "";
+}
+
+function validateSubCategoryName(type, name, currentName = "") {
+  if (!state.types.includes(type)) return "Kategori utama tidak valid.";
+  const clean = String(name || "").trim();
+  if (!clean) return "Nama item wajib diisi.";
+  const list = getSubCategoriesForType(type);
+  if (list.includes(clean) && clean !== currentName) return "Nama item sudah ada.";
+  return "";
+}
+
+function isMasterItemUsed(key, name, type = "") {
+  if (key === "types" || key === "categories") {
+    return state.transactions.some((item) => item.type === name || item.category === name);
+  }
+  if (key === "subCategories") {
+    return state.transactions.some((item) => item.subCategory === name && (!type || item.type === type || item.category === type));
+  }
+  if (key === "paymentMethods") {
+    return state.transactions.some((item) => item.paymentMethod === name);
+  }
+  return false;
 }
 
 function normalizeTypes(types) {
