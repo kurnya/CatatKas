@@ -4,9 +4,13 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#0f766e">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Money Tracker">
     <title>Catatan Keuangan</title>
     <link rel="manifest" href="manifest.json">
     <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="icons/icon-192.png">
     <link rel="stylesheet" href="styles.css">
   </head>
   <body>
@@ -314,6 +318,24 @@
         <button type="button" class="primary-button" id="applyFilterButton">Terapkan</button>
       </div>
     </aside>
+
+    <div class="modal-overlay" id="installGuideOverlay" hidden></div>
+    <section class="install-modal" id="installGuideModal" aria-hidden="true" aria-label="Panduan install aplikasi">
+      <div class="modal-header">
+        <div>
+          <p class="eyebrow">Install PWA</p>
+          <h2 id="installGuideTitle">Tambahkan ke Home Screen</h2>
+        </div>
+        <button type="button" class="close-sheet-button" id="closeInstallGuideButton" aria-label="Tutup panduan install">x</button>
+      </div>
+      <ol class="install-steps" id="iosInstallSteps">
+        <li>Buka aplikasi ini di Safari.</li>
+        <li>Tekan tombol Share / Bagikan.</li>
+        <li>Pilih Add to Home Screen / Tambahkan ke Layar Utama.</li>
+        <li>Tekan Add / Tambah.</li>
+      </ol>
+      <p class="install-message" id="unsupportedInstallMessage" hidden>Browser ini belum mendukung install otomatis. Jika tersedia, gunakan menu browser untuk menambahkan aplikasi ke layar utama.</p>
+    </section>
 
     <button class="fab" id="addTransactionButton">+ Tambah Transaksi</button>
 

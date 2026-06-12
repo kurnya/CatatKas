@@ -36,6 +36,12 @@ const elements = {
   pages: document.querySelectorAll(".page"),
   navItems: document.querySelectorAll(".nav-item"),
   installButton: document.querySelector("#installButton"),
+  installGuideOverlay: document.querySelector("#installGuideOverlay"),
+  installGuideModal: document.querySelector("#installGuideModal"),
+  installGuideTitle: document.querySelector("#installGuideTitle"),
+  iosInstallSteps: document.querySelector("#iosInstallSteps"),
+  unsupportedInstallMessage: document.querySelector("#unsupportedInstallMessage"),
+  closeInstallGuideButton: document.querySelector("#closeInstallGuideButton"),
   summaryMonth: document.querySelector("#summaryMonth"),
   historyMonth: document.querySelector("#historyMonth"),
   activeMonthLabel: document.querySelector("#activeMonthLabel"),
@@ -166,7 +172,10 @@ function bindEvents() {
   });
 
   elements.installButton.addEventListener("click", installApp);
+  elements.installGuideOverlay.addEventListener("click", closeInstallGuide);
+  elements.closeInstallGuideButton.addEventListener("click", closeInstallGuide);
   elements.installButton.hidden = true;
+  updateInstallButtonVisibility();
   window.addEventListener("beforeinstallprompt", (event) => {
     if (isRunningStandalone()) {
       elements.installButton.hidden = true;
@@ -181,6 +190,7 @@ function bindEvents() {
   window.addEventListener("appinstalled", () => {
     deferredPrompt = null;
     elements.installButton.hidden = true;
+    closeInstallGuide();
   });
 }
 
@@ -744,19 +754,59 @@ function importBackup(event) {
 }
 
 async function installApp() {
-  if (!deferredPrompt || isRunningStandalone()) {
+  if (isRunningStandalone()) {
     elements.installButton.hidden = true;
     return;
   }
 
-  deferredPrompt.prompt();
-  await deferredPrompt.userChoice;
-  deferredPrompt = null;
-  elements.installButton.hidden = true;
+  if (deferredPrompt) {
+    deferredPrompt.prompt();
+    await deferredPrompt.userChoice;
+    deferredPrompt = null;
+    elements.installButton.hidden = true;
+    return;
+  }
+
+  openInstallGuide(isIOSDevice() ? "ios" : "unsupported");
 }
 
 function isRunningStandalone() {
   return window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true;
+}
+
+function isIOSDevice() {
+  const platform = window.navigator.platform || "";
+  const userAgent = window.navigator.userAgent || "";
+  const iOSPlatform = /iPad|iPhone|iPod/.test(platform);
+  const iPadOS = platform === "MacIntel" && window.navigator.maxTouchPoints > 1;
+  return iOSPlatform || iPadOS || /iPad|iPhone|iPod/.test(userAgent);
+}
+
+function updateInstallButtonVisibility() {
+  if (isRunningStandalone()) {
+    elements.installButton.hidden = true;
+    return;
+  }
+
+  elements.installButton.hidden = false;
+}
+
+function openInstallGuide(mode) {
+  const iosMode = mode === "ios";
+  elements.installGuideTitle.textContent = iosMode ? "Tambahkan ke Home Screen" : "Install belum didukung";
+  elements.iosInstallSteps.hidden = !iosMode;
+  elements.unsupportedInstallMessage.hidden = iosMode;
+  elements.installGuideOverlay.hidden = false;
+  elements.installGuideModal.classList.add("open");
+  elements.installGuideModal.setAttribute("aria-hidden", "false");
+  document.body.classList.add("sheet-open");
+}
+
+function closeInstallGuide() {
+  elements.installGuideModal.classList.remove("open");
+  elements.installGuideModal.setAttribute("aria-hidden", "true");
+  elements.installGuideOverlay.hidden = true;
+  document.body.classList.remove("sheet-open");
 }
 
 function registerServiceWorker() {

@@ -286,6 +286,13 @@ select:focus {
   background: rgba(16, 32, 28, 0.42);
 }
 
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 45;
+  background: rgba(16, 32, 28, 0.46);
+}
+
 .bottom-sheet {
   position: fixed;
   right: 0;
@@ -381,6 +388,56 @@ select:focus {
   gap: 9px;
   padding: 12px 16px max(14px, env(safe-area-inset-bottom));
   border-top: 1px solid var(--line);
+}
+
+.install-modal {
+  position: fixed;
+  right: 16px;
+  left: 16px;
+  top: 50%;
+  z-index: 50;
+  width: min(420px, calc(100% - 32px));
+  margin: 0 auto;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: #fff;
+  box-shadow: 0 22px 46px rgba(16, 32, 28, 0.2);
+  transform: translateY(-50%) scale(0.96);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 160ms ease, transform 160ms ease;
+}
+
+.install-modal.open {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(-50%) scale(1);
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 16px 10px;
+}
+
+.install-steps {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 4px 18px 18px 36px;
+  color: var(--text);
+  font-size: 0.92rem;
+  line-height: 1.45;
+}
+
+.install-message {
+  margin: 0;
+  padding: 4px 18px 18px;
+  color: var(--muted);
+  font-size: 0.92rem;
+  line-height: 1.45;
 }
 
 .primary-button,
