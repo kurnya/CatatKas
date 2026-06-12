@@ -1,0 +1,244 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#0f766e">
+    <title>Catatan Keuangan</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <header class="app-header">
+      <div>
+        <p class="eyebrow">Money Tracker</p>
+        <h1 id="pageTitle">Beranda</h1>
+      </div>
+      <button class="ghost-button compact" id="installButton" hidden>Install</button>
+    </header>
+
+    <main class="app-shell">
+      <section class="page active" id="homePage" data-title="Beranda">
+        <div class="month-row">
+          <div>
+            <span class="soft-label">Bulan aktif</span>
+            <strong id="activeMonthLabel">-</strong>
+          </div>
+          <input type="month" id="summaryMonth" aria-label="Bulan aktif">
+        </div>
+
+        <div class="summary-grid" aria-label="Ringkasan bulan ini">
+          <article class="summary-card">
+            <span>Total Pemasukan</span>
+            <strong class="income-text" id="incomeTotal">Rp0</strong>
+          </article>
+          <article class="summary-card">
+            <span>Total Pengeluaran</span>
+            <strong class="expense-text" id="expenseTotal">Rp0</strong>
+          </article>
+          <article class="summary-card balance-card">
+            <span>Saldo</span>
+            <strong id="balanceTotal">Rp0</strong>
+          </article>
+        </div>
+
+        <section class="panel recent-panel">
+          <div class="section-title">
+            <h2>Transaksi Terakhir</h2>
+            <button class="text-button" data-nav="transactions">Lihat semua</button>
+          </div>
+          <div class="transaction-list compact-list" id="recentList"></div>
+        </section>
+      </section>
+
+      <section class="page" id="addPage" data-title="Tambah Transaksi">
+        <button class="text-button back-button" data-nav="home">Kembali</button>
+        <form id="transactionForm" class="panel transaction-form">
+          <input type="hidden" id="transactionId">
+
+          <label>
+            Tanggal
+            <input type="date" id="date" required>
+          </label>
+
+          <div class="quick-row" aria-label="Pilihan tanggal cepat">
+            <button type="button" class="chip" data-quick-date="today">Hari ini</button>
+            <button type="button" class="chip" data-quick-date="yesterday">Kemarin</button>
+          </div>
+
+          <label>
+            Jenis transaksi
+            <select id="type" required></select>
+          </label>
+
+          <label class="amount-field">
+            Nominal
+            <input type="number" id="amount" inputmode="numeric" min="0" step="100" placeholder="25000" required>
+          </label>
+
+          <select id="category" hidden aria-hidden="true" tabindex="-1"></select>
+
+          <label>
+            Subkategori
+            <select id="subCategory" required></select>
+          </label>
+
+          <label>
+            Metode pembayaran
+            <select id="paymentMethod" required></select>
+          </label>
+
+          <div class="quick-row" aria-label="Pilihan cepat">
+            <button type="button" class="chip" data-quick-payment="CASH">CASH</button>
+            <button type="button" class="chip" data-quick-payment="BCA">BCA</button>
+            <button type="button" class="chip" data-quick-payment="DANA">DANA</button>
+            <button type="button" class="chip" data-quick-category="Gaji">Gaji</button>
+            <button type="button" class="chip" data-quick-category="Makan & Minum">Makan & Minum</button>
+            <button type="button" class="chip" data-quick-category="Transportasi">Transportasi</button>
+          </div>
+
+          <label>
+            Catatan opsional
+            <input type="text" id="note" maxlength="120" placeholder="Contoh: sarapan">
+          </label>
+
+          <div class="form-actions">
+            <button type="submit" class="primary-button" id="submitButton">Simpan Transaksi</button>
+            <button type="button" class="ghost-button" id="cancelEditButton" hidden>Batal edit</button>
+          </div>
+        </form>
+      </section>
+
+      <section class="page" id="transactionsPage" data-title="Transaksi">
+        <section class="panel transaction-filter-panel">
+          <div class="filter-top-row">
+            <label>
+              <span>Bulan</span>
+              <input type="month" id="historyMonth">
+            </label>
+            <button type="button" class="ghost-button compact" id="openFilterButton">Filter</button>
+          </div>
+          <p class="filter-summary" id="filterSummary">Semua Transaksi • Semua Metode</p>
+        </section>
+        <div class="transaction-list" id="transactionList"></div>
+      </section>
+
+      <section class="page" id="statsPage" data-title="Statistik">
+        <div class="stats-grid">
+          <article class="stat-card">
+            <span>Pemasukan Bulanan</span>
+            <strong class="income-text" id="statsIncome">Rp0</strong>
+          </article>
+          <article class="stat-card">
+            <span>Pengeluaran Bulanan</span>
+            <strong class="expense-text" id="statsExpense">Rp0</strong>
+          </article>
+          <article class="stat-card">
+            <span>Kategori Terbesar</span>
+            <strong id="topExpenseCategory">-</strong>
+          </article>
+          <article class="stat-card">
+            <span>Rata-rata Harian</span>
+            <strong id="dailyAverage">Rp0</strong>
+          </article>
+          <article class="stat-card wide">
+            <span>Sisa Saldo Bulan Ini</span>
+            <strong id="statsBalance">Rp0</strong>
+          </article>
+        </div>
+
+        <section class="panel">
+          <div class="section-title">
+            <h2>Grafik Pengeluaran</h2>
+          </div>
+          <div class="bar-chart" id="expenseChart"></div>
+        </section>
+      </section>
+
+      <section class="page" id="masterPage" data-title="Master Data">
+        <div class="master-section panel">
+          <div class="section-title">
+            <h2>Kategori</h2>
+            <button class="small-button" data-add-master="categories">Tambah</button>
+          </div>
+          <div class="master-list" id="categoryList"></div>
+        </div>
+
+        <div class="master-section panel">
+          <div class="section-title">
+            <h2>Subkategori</h2>
+            <button class="small-button" data-add-master="subCategories">Tambah</button>
+          </div>
+          <p class="helper-text">Subkategori dikelompokkan berdasarkan kategori utama.</p>
+          <div class="master-list" id="subCategoryList"></div>
+        </div>
+
+        <div class="master-section panel">
+          <div class="section-title">
+            <h2>Metode Pembayaran</h2>
+            <button class="small-button" data-add-master="paymentMethods">Tambah</button>
+          </div>
+          <div class="master-list" id="paymentMethodList"></div>
+        </div>
+      </section>
+
+      <section class="page" id="settingsPage" data-title="Pengaturan">
+        <section class="panel">
+          <h2>Backup Data</h2>
+          <p class="helper-text">Data disimpan di browser perangkat ini. Gunakan backup supaya aman saat pindah perangkat atau reset browser.</p>
+          <div class="settings-actions">
+            <button type="button" class="primary-button" id="exportButton">Export JSON</button>
+            <label class="file-button">
+              Import JSON
+              <input type="file" id="importFile" accept="application/json">
+            </label>
+            <button type="button" class="ghost-button" id="exportCsvButton">Export CSV</button>
+            <button type="button" class="ghost-button danger" id="resetMasterButton">Reset Master Data</button>
+          </div>
+        </section>
+      </section>
+    </main>
+
+    <div class="sheet-overlay" id="filterOverlay" hidden></div>
+    <aside class="bottom-sheet" id="filterSheet" aria-hidden="true" aria-label="Filter transaksi">
+      <div class="sheet-handle"></div>
+      <div class="sheet-header">
+        <div>
+          <p class="eyebrow">Filter</p>
+          <h2>Transaksi</h2>
+        </div>
+        <button type="button" class="close-sheet-button" id="closeFilterButton" aria-label="Tutup filter">x</button>
+      </div>
+
+      <div class="sheet-content">
+        <section class="filter-group">
+          <h3>Kategori</h3>
+          <div class="chip-grid" id="filterCategoryChips"></div>
+        </section>
+
+        <section class="filter-group">
+          <h3>Metode Pembayaran</h3>
+          <div class="chip-grid" id="filterPaymentChips"></div>
+        </section>
+      </div>
+
+      <div class="sheet-actions">
+        <button type="button" class="ghost-button" id="resetFilterButton">Reset</button>
+        <button type="button" class="primary-button" id="applyFilterButton">Terapkan</button>
+      </div>
+    </aside>
+
+    <button class="fab" id="addTransactionButton">+ Tambah Transaksi</button>
+
+    <nav class="bottom-nav" aria-label="Navigasi utama">
+      <button class="nav-item active" data-nav="home"><span class="nav-icon">⌂</span><span>Beranda</span></button>
+      <button class="nav-item" data-nav="transactions"><span class="nav-icon">↕</span><span>Transaksi</span></button>
+      <button class="nav-item" data-nav="stats"><span class="nav-icon">▥</span><span>Statistik</span></button>
+      <button class="nav-item" data-nav="master"><span class="nav-icon">☷</span><span>Master</span></button>
+      <button class="nav-item" data-nav="settings"><span class="nav-icon">⚙</span><span>Setting</span></button>
+    </nav>
+
+    <script src="app.js"></script>
+  </body>
+</html>
