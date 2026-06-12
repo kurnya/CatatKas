@@ -1,6 +1,7 @@
 const STORAGE_KEY = "catatan_keuangan_pwa_v1";
 const PREFERENCES_KEY = "catatan_keuangan_preferences_v1";
 const APP_VERSION = "1.0.1";
+const IS_DEV = location.hostname === "localhost" || location.hostname === "127.0.0.1";
 const UPDATE_KEYS = {
   currentVersion: "catatkas_current_version",
   availableVersion: "catatkas_update_available_version",
@@ -39,6 +40,7 @@ let serviceWorkerRegistration = null;
 let pendingServiceWorker = null;
 let refreshingForUpdate = false;
 let updateToastElement = null;
+let updateModalShownThisSession = false;
 let activeFilters = {
   category: "Semua",
   payment: "Semua"
@@ -1300,7 +1302,7 @@ function waitForUpdateCheck(registration) {
 
 async function handleUpdateReady(worker, manual = false) {
   const updateVersion = await requestServiceWorkerVersion(worker);
-  if (!isNewerAppVersion(updateVersion)) {
+  if (!isNewerVersion(updateVersion, APP_VERSION)) {
     pendingServiceWorker = null;
     localStorage.removeItem(UPDATE_KEYS.availableVersion);
     renderUpdateSettings();
@@ -1312,7 +1314,10 @@ async function handleUpdateReady(worker, manual = false) {
   localStorage.setItem(UPDATE_KEYS.availableVersion, updateVersion);
   renderUpdateSettings();
 
-  if (manual || shouldShowUpdatePrompt(updateVersion)) {
+  if (manual) {
+    showUpdateModal(updateVersion);
+  } else if (!IS_DEV && !updateModalShownThisSession && shouldShowUpdatePrompt(updateVersion)) {
+    updateModalShownThisSession = true;
     showUpdateModal(updateVersion);
   }
   return true;
@@ -1429,7 +1434,7 @@ function ignoreUpdate(updateVersion) {
 
 function shouldShowUpdatePrompt(updateVersion) {
   if (!navigator.onLine) return false;
-  if (!isNewerAppVersion(updateVersion)) return false;
+  if (!isNewerVersion(updateVersion, APP_VERSION)) return false;
   const remindLaterUntil = Number(localStorage.getItem(UPDATE_KEYS.remindLaterUntil) || 0);
   if (remindLaterUntil > Date.now()) return false;
   return localStorage.getItem(UPDATE_KEYS.ignoredVersion) !== updateVersion;
@@ -1437,7 +1442,7 @@ function shouldShowUpdatePrompt(updateVersion) {
 
 function renderUpdateSettings(options = {}) {
   const availableVersion = localStorage.getItem(UPDATE_KEYS.availableVersion);
-  const hasUpdate = Boolean(pendingServiceWorker && availableVersion && isNewerAppVersion(availableVersion));
+  const hasUpdate = Boolean(pendingServiceWorker && availableVersion && isNewerVersion(availableVersion, APP_VERSION));
   elements.updateAppName.textContent = `CatatKas v${APP_VERSION}`;
   elements.appVersionLabel.textContent = APP_VERSION;
 
@@ -1454,20 +1459,26 @@ function renderUpdateSettings(options = {}) {
 }
 
 function isNewerAppVersion(version) {
-  if (!version || version === "baru") return version === "baru";
-  const current = parseVersion(APP_VERSION);
-  const candidate = parseVersion(version);
-  if (!current || !candidate) return version !== APP_VERSION;
+  return isNewerVersion(version, APP_VERSION);
+}
 
-  for (let index = 0; index < Math.max(current.length, candidate.length); index += 1) {
-    const currentPart = current[index] || 0;
-    const candidatePart = candidate[index] || 0;
-    if (candidatePart > currentPart) return true;
-    if (candidatePart < currentPart) return false;
+function isNewerVersion(latestVersion, currentVersion) {
+  if (!latestVersion || latestVersion === "baru") return false;
+  if (!currentVersion || currentVersion === "baru") return latestVersion === "baru";
+  if (latestVersion === currentVersion) return false;
+  
+  const current = parseVersion(currentVersion);
+  const latest = parseVersion(latestVersion);
+  if (!current || !latest) return latestVersion !== currentVersion;
+
+  for (let i = 0; i < Math.max(current.length, latest.length); i++) {
+    const currentPart = current[i] || 0;
+    const latestPart = latest[i] || 0;
+    if (latestPart > currentPart) return true;
+    if (latestPart < currentPart) return false;
   }
   return false;
 }
-
 function parseVersion(version) {
   const parts = String(version).split(".").map((part) => Number(part));
   if (parts.some((part) => Number.isNaN(part))) return null;
@@ -1483,6 +1494,7 @@ function showUpdateSuccessToastIfNeeded() {
   localStorage.removeItem(UPDATE_KEYS.availableVersion);
   localStorage.removeItem(UPDATE_KEYS.remindLaterUntil);
   localStorage.removeItem(UPDATE_KEYS.ignoredVersion);
+  updateModalShownThisSession = false;
   window.setTimeout(() => showToast("CatatKas berhasil diperbarui.", "success"), 300);
 }
 
@@ -1778,3 +1790,11 @@ function escapeHtml(value) {
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;");
 }
+
+
+
+
+
+
+
+
