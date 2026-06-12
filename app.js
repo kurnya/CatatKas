@@ -57,7 +57,6 @@ const elements = {
   pages: document.querySelectorAll(".page"),
   navItems: document.querySelectorAll(".nav-item"),
   installButton: document.querySelector("#installButton"),
-  toastContainer: document.querySelector("#toastContainer"),
   toastContainerTop: document.querySelector("#toastContainerTop"),
   appModalOverlay: document.querySelector("#appModalOverlay"),
   appModal: document.querySelector("#appModal"),
@@ -232,20 +231,23 @@ function bindEvents() {
   elements.appModalOverlay.addEventListener("click", () => closeModal(false));
   elements.appModalClose.addEventListener("click", () => closeModal(false));
   elements.appModalCancel.addEventListener("click", () => closeModal(false));
+
+  // Always hide install button on page load; it will only appear
+  // when beforeinstallprompt fires AND the app is NOT already installed.
   elements.installButton.hidden = true;
 
-  window.addEventListener("beforeinstallprompt", (event) => {
-    console.log("[PWA Debug] beforeinstallprompt event fired");
-    event.preventDefault();
-    if (!isRunningStandalone()) {
+  if (isRunningStandalone()) {
+    // App is already installed and running as PWA — never show install button
+    console.log("[PWA Debug] Running in standalone mode, install button stays hidden");
+  } else {
+    window.addEventListener("beforeinstallprompt", (event) => {
+      console.log("[PWA Debug] beforeinstallprompt event fired");
+      event.preventDefault();
       deferredPrompt = event;
       elements.installButton.hidden = false;
       console.log("[PWA Debug] deferredPrompt saved, button visible");
-      console.log("[PWA Debug] User agent:", navigator.userAgent);
-    } else {
-      console.log("[PWA Debug] Running in standalone mode, hiding button");
-    }
-  });
+    });
+  }
 
   window.addEventListener("appinstalled", () => {
     console.log("[PWA Debug] appinstalled event fired - installation successful");
@@ -468,38 +470,24 @@ function handleGlobalKeydown(event) {
   }
 }
 
-function showToastTop(message, type = "success", duration = 3000) {
+function showToast(message, type = "info", duration = 3000) {
+  const status = ["success", "warning", "danger", "error", "info"].includes(type) ? type : "info";
   const toast = document.createElement("div");
-  toast.className = `toast ${type}`; 
-  toast.setAttribute("role", "status");
-  
+  toast.className = `toast ${status}`;
+  toast.setAttribute("role", status === "danger" || status === "error" ? "alert" : "status");
+
   const messageEl = document.createElement("strong");
   messageEl.textContent = message;
-  
   toast.appendChild(messageEl);
+
   elements.toastContainerTop.appendChild(toast);
-  
+
   if (duration > 0) {
     window.setTimeout(() => {
       toast.style.animation = "toastOut 180ms ease forwards";
       window.setTimeout(() => toast.remove(), 180);
     }, duration);
   }
-}
-function showToast(message, type = "info") {
-  const toast = document.createElement("div");
-  const status = ["success", "warning", "danger", "error", "info"].includes(type) ? type : "info";
-  toast.className = `toast ${status}`;
-  toast.setAttribute("role", status === "danger" || status === "error" ? "alert" : "status");
-  toast.textContent = message;
-  elements.toastContainer.appendChild(toast);
-
-  window.setTimeout(() => {
-    toast.style.opacity = "0";
-    toast.style.transform = "translateY(10px)";
-    toast.style.transition = "opacity 150ms ease, transform 150ms ease";
-    window.setTimeout(() => toast.remove(), 180);
-  }, 2600);
 }
 
 function showConfirmModal(options = {}) {
@@ -1150,7 +1138,7 @@ function savePreferencesFromForm() {
   preferences.theme = elements.preferenceTheme.value;
   preferences.defaultPayment = elements.preferenceDefaultPayment.value;
   persistPreferences();
-  showToastTop("Preferensi berhasil disimpan.", "success", 2500);
+  showToast("Preferensi berhasil disimpan.", "success", 2500);
 }
 
 function exportBackup() {
@@ -1612,7 +1600,7 @@ function showUpdateAvailableToast(updateVersion) {
 
   actions.append(laterButton, updateButton);
   toast.append(message, actions);
-  elements.toastContainer.appendChild(toast);
+  elements.toastContainerTop.appendChild(toast);
   updateToastElement = toast;
 }
 
