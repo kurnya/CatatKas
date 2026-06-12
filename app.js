@@ -24,7 +24,7 @@ const pageMap = {
 
 const state = loadState();
 const preferences = loadPreferences();
-let deferredInstallPrompt = null;
+let deferredPrompt = null;
 let activeFilters = {
   category: "Semua",
   payment: "Semua"
@@ -166,10 +166,21 @@ function bindEvents() {
   });
 
   elements.installButton.addEventListener("click", installApp);
+  elements.installButton.hidden = true;
   window.addEventListener("beforeinstallprompt", (event) => {
+    if (isRunningStandalone()) {
+      elements.installButton.hidden = true;
+      return;
+    }
+
     event.preventDefault();
-    deferredInstallPrompt = event;
+    deferredPrompt = event;
     elements.installButton.hidden = false;
+  });
+
+  window.addEventListener("appinstalled", () => {
+    deferredPrompt = null;
+    elements.installButton.hidden = true;
   });
 }
 
@@ -733,11 +744,19 @@ function importBackup(event) {
 }
 
 async function installApp() {
-  if (!deferredInstallPrompt) return;
-  deferredInstallPrompt.prompt();
-  await deferredInstallPrompt.userChoice;
-  deferredInstallPrompt = null;
+  if (!deferredPrompt || isRunningStandalone()) {
+    elements.installButton.hidden = true;
+    return;
+  }
+
+  deferredPrompt.prompt();
+  await deferredPrompt.userChoice;
+  deferredPrompt = null;
   elements.installButton.hidden = true;
+}
+
+function isRunningStandalone() {
+  return window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true;
 }
 
 function registerServiceWorker() {
