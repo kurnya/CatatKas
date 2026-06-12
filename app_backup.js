@@ -210,13 +210,16 @@ function bindEvents() {
   elements.appModalClose.addEventListener("click", () => closeModal(false));
   elements.appModalCancel.addEventListener("click", () => closeModal(false));
   elements.installButton.hidden = true;
-
+  updateInstallButtonVisibility();
   window.addEventListener("beforeinstallprompt", (event) => {
-    event.preventDefault();
-    if (!isRunningStandalone()) {
-      deferredPrompt = event;
-      elements.installButton.hidden = false;
+    if (isRunningStandalone()) {
+      elements.installButton.hidden = true;
+      return;
     }
+
+    event.preventDefault();
+    deferredPrompt = event;
+    elements.installButton.hidden = false;
   });
 
   window.addEventListener("appinstalled", () => {
@@ -1198,7 +1201,14 @@ function isIOSDevice() {
   return iOSPlatform || iPadOS || /iPad|iPhone|iPod/.test(userAgent);
 }
 
+function updateInstallButtonVisibility() {
+  if (isRunningStandalone()) {
+    elements.installButton.hidden = true;
+    return;
+  }
 
+  elements.installButton.hidden = false;
+}
 
 function registerServiceWorker() {
   if (!("serviceWorker" in navigator)) {
