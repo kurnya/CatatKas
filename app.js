@@ -53,6 +53,7 @@ const elements = {
   navItems: document.querySelectorAll(".nav-item"),
   installButton: document.querySelector("#installButton"),
   toastContainer: document.querySelector("#toastContainer"),
+  toastContainerTop: document.querySelector("#toastContainerTop"),
   appModalOverlay: document.querySelector("#appModalOverlay"),
   appModal: document.querySelector("#appModal"),
   appModalClose: document.querySelector("#appModalClose"),
@@ -436,6 +437,24 @@ function handleGlobalKeydown(event) {
   }
 }
 
+function showToastTop(message, type = "success", duration = 3000) {
+  const toast = document.createElement("div");
+  toast.className = `toast ${type}`; 
+  toast.setAttribute("role", "status");
+  
+  const messageEl = document.createElement("strong");
+  messageEl.textContent = message;
+  
+  toast.appendChild(messageEl);
+  elements.toastContainerTop.appendChild(toast);
+  
+  if (duration > 0) {
+    window.setTimeout(() => {
+      toast.style.animation = "toastOut 180ms ease forwards";
+      window.setTimeout(() => toast.remove(), 180);
+    }, duration);
+  }
+}
 function showToast(message, type = "info") {
   const toast = document.createElement("div");
   const status = ["success", "warning", "danger", "error", "info"].includes(type) ? type : "info";
@@ -1080,7 +1099,7 @@ function savePreferencesFromForm() {
   preferences.theme = elements.preferenceTheme.value;
   preferences.defaultPayment = elements.preferenceDefaultPayment.value;
   persistPreferences();
-  showToast("Preferensi berhasil disimpan.", "success");
+  showToastTop("Preferensi berhasil disimpan.", "success", 2500);
 }
 
 function exportBackup() {
@@ -1790,6 +1809,12 @@ function escapeHtml(value) {
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;");
 }
+
+
+
+
+
+
 
 
 
