@@ -1,6 +1,6 @@
 const STORAGE_KEY = "catatan_keuangan_pwa_v1";
 const PREFERENCES_KEY = "catatan_keuangan_preferences_v1";
-const APP_VERSION = "1.0.3";
+const APP_VERSION = "1.0.4";
 const IS_DEV = location.hostname === "localhost" || location.hostname === "127.0.0.1";
 const UPDATE_KEYS = {
   currentVersion: "catatkas_current_version",
@@ -277,6 +277,7 @@ function bindEvents() {
     console.log("[PWA Debug] appinstalled event fired - installation successful");
     deferredPrompt = null;
     elements.installButton.hidden = true;
+    localStorage.setItem("catatkas_app_installed", "1");
     closeModal(false);
     showToast("Aplikasi berhasil diinstall", "success");
   });
@@ -1270,6 +1271,8 @@ function isRunningStandalone() {
          window.matchMedia("(display-mode: minimal-ui)").matches ||
          window.navigator.standalone === true || 
          document.referrer.startsWith("android-app://") ||
+         new URLSearchParams(window.location.search).has("twa") ||
+         localStorage.getItem("catatkas_app_installed") === "1" ||
          (window.outerHeight === 0 && window.outerWidth > 0);
 }
 

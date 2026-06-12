@@ -3,7 +3,7 @@
   "short_name": "CatatKas",
   "description": "Aplikasi pencatat keuangan pribadi berbasis PWA",
   "id": "/",
-  "start_url": "/CatatKas/",
+  "start_url": "/CatatKas/?twa=1",
   "scope": "/CatatKas/",
   "display": "standalone",
   "background_color": "#f4f6f5",
