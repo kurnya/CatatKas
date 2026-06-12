@@ -431,6 +431,20 @@ select:focus {
   color: var(--expense);
 }
 
+.danger-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 42px;
+  border: 1px solid rgba(220, 38, 38, 0.18);
+  border-radius: 14px;
+  background: #fef2f2;
+  color: var(--expense);
+  padding: 9px 13px;
+  cursor: pointer;
+  font-weight: 900;
+}
+
 .file-button input {
   display: none;
 }
@@ -440,6 +454,79 @@ select:focus {
   display: grid;
   gap: 9px;
   margin-top: 4px;
+}
+
+.settings-card {
+  display: grid;
+  gap: 12px;
+}
+
+.settings-heading {
+  display: grid;
+  gap: 4px;
+}
+
+.settings-list {
+  display: grid;
+  gap: 9px;
+}
+
+.settings-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 12px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: #fbfdfc;
+}
+
+.settings-row div {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.settings-row strong {
+  font-size: 0.9rem;
+}
+
+.settings-row span,
+.about-list span {
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.35;
+}
+
+.compact-action {
+  width: auto;
+  min-width: 82px;
+  min-height: 36px;
+  padding: 7px 10px;
+}
+
+.preference-grid {
+  display: grid;
+  gap: 10px;
+}
+
+.danger-zone {
+  border-color: rgba(220, 38, 38, 0.18);
+}
+
+.about-list {
+  display: grid;
+  gap: 8px;
+}
+
+.about-list div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--line);
 }
 
 .transaction-list {

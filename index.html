@@ -184,17 +184,103 @@
       </section>
 
       <section class="page" id="settingsPage" data-title="Pengaturan">
-        <section class="panel">
-          <h2>Backup Data</h2>
-          <p class="helper-text">Data disimpan di browser perangkat ini. Gunakan backup supaya aman saat pindah perangkat atau reset browser.</p>
+        <section class="settings-card panel">
+          <div class="settings-heading">
+            <h2>Data & Backup</h2>
+            <p class="helper-text">Simpan cadangan data atau unduh riwayat transaksi.</p>
+          </div>
+          <div class="settings-list">
+            <div class="settings-row">
+              <div>
+                <strong>Export JSON</strong>
+                <span>Backup seluruh data aplikasi.</span>
+              </div>
+              <button type="button" class="primary-button compact-action" id="exportButton">Export</button>
+            </div>
+            <div class="settings-row">
+              <div>
+                <strong>Import JSON</strong>
+                <span>Pulihkan data dari file backup.</span>
+              </div>
+              <label class="file-button compact-action">
+                Import
+                <input type="file" id="importFile" accept="application/json">
+              </label>
+            </div>
+            <div class="settings-row">
+              <div>
+                <strong>Export CSV</strong>
+                <span>Unduh riwayat transaksi untuk Excel.</span>
+              </div>
+              <button type="button" class="ghost-button compact-action" id="exportCsvButton">CSV</button>
+            </div>
+          </div>
+        </section>
+
+        <section class="settings-card panel">
+          <div class="settings-heading">
+            <h2>Master Data</h2>
+            <p class="helper-text">Kelola pilihan kategori, subkategori, dan metode pembayaran.</p>
+          </div>
           <div class="settings-actions">
-            <button type="button" class="primary-button" id="exportButton">Export JSON</button>
-            <label class="file-button">
-              Import JSON
-              <input type="file" id="importFile" accept="application/json">
+            <button type="button" class="ghost-button" data-nav="master">Kelola Kategori</button>
+            <button type="button" class="ghost-button" data-nav="master">Kelola Subkategori</button>
+            <button type="button" class="ghost-button" data-nav="master">Kelola Metode Pembayaran</button>
+          </div>
+        </section>
+
+        <section class="settings-card panel">
+          <div class="settings-heading">
+            <h2>Preferensi Aplikasi</h2>
+            <p class="helper-text">Preferensi disimpan di perangkat ini.</p>
+          </div>
+          <div class="preference-grid">
+            <label>
+              Mata uang
+              <select id="preferenceCurrency">
+                <option value="IDR">Rupiah</option>
+              </select>
             </label>
-            <button type="button" class="ghost-button" id="exportCsvButton">Export CSV</button>
-            <button type="button" class="ghost-button danger" id="resetMasterButton">Reset Master Data</button>
+            <label>
+              Format tanggal
+              <select id="preferenceDateFormat">
+                <option value="DD/MM/YYYY">DD/MM/YYYY</option>
+              </select>
+            </label>
+            <label>
+              Tema
+              <select id="preferenceTheme">
+                <option value="system">System</option>
+                <option value="light">Light</option>
+                <option value="dark">Dark</option>
+              </select>
+            </label>
+            <label>
+              Default metode pembayaran
+              <select id="preferenceDefaultPayment"></select>
+            </label>
+          </div>
+        </section>
+
+        <section class="settings-card panel danger-zone">
+          <div class="settings-heading">
+            <h2>Zona Berbahaya</h2>
+            <p class="helper-text">Aksi di bawah membutuhkan konfirmasi.</p>
+          </div>
+          <div class="settings-actions">
+            <button type="button" class="danger-button" id="resetMasterButton">Reset Master Data</button>
+            <button type="button" class="danger-button" id="deleteTransactionsButton">Hapus Semua Transaksi</button>
+          </div>
+        </section>
+
+        <section class="settings-card panel about-card">
+          <div class="settings-heading">
+            <h2>Tentang Aplikasi</h2>
+          </div>
+          <div class="about-list">
+            <div><span>Nama aplikasi</span><strong>Money Tracker</strong></div>
+            <div><span>Versi</span><strong>1.0.0</strong></div>
+            <p class="helper-text">Data disimpan secara lokal di perangkat menggunakan localStorage.</p>
           </div>
         </section>
       </section>

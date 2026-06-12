@@ -1,4 +1,5 @@
 const STORAGE_KEY = "catatan_keuangan_pwa_v1";
+const PREFERENCES_KEY = "catatan_keuangan_preferences_v1";
 
 const defaults = {
   types: ["Pemasukan", "Pengeluaran", "Transfer"],
@@ -22,6 +23,7 @@ const pageMap = {
 };
 
 const state = loadState();
+const preferences = loadPreferences();
 let deferredInstallPrompt = null;
 let activeFilters = {
   category: "Semua",
@@ -75,7 +77,12 @@ const elements = {
   exportButton: document.querySelector("#exportButton"),
   importFile: document.querySelector("#importFile"),
   exportCsvButton: document.querySelector("#exportCsvButton"),
-  resetMasterButton: document.querySelector("#resetMasterButton")
+  resetMasterButton: document.querySelector("#resetMasterButton"),
+  deleteTransactionsButton: document.querySelector("#deleteTransactionsButton"),
+  preferenceCurrency: document.querySelector("#preferenceCurrency"),
+  preferenceDateFormat: document.querySelector("#preferenceDateFormat"),
+  preferenceTheme: document.querySelector("#preferenceTheme"),
+  preferenceDefaultPayment: document.querySelector("#preferenceDefaultPayment")
 };
 
 init();
@@ -129,6 +136,11 @@ function bindEvents() {
   elements.exportCsvButton.addEventListener("click", exportCsv);
   elements.importFile.addEventListener("change", importBackup);
   elements.resetMasterButton.addEventListener("click", resetMasterData);
+  elements.deleteTransactionsButton.addEventListener("click", deleteAllTransactions);
+  elements.preferenceCurrency.addEventListener("change", savePreferencesFromForm);
+  elements.preferenceDateFormat.addEventListener("change", savePreferencesFromForm);
+  elements.preferenceTheme.addEventListener("change", savePreferencesFromForm);
+  elements.preferenceDefaultPayment.addEventListener("change", savePreferencesFromForm);
 
   document.querySelectorAll("[data-quick-date]").forEach((button) => {
     button.addEventListener("click", () => {
@@ -188,6 +200,26 @@ function persist() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
 }
 
+function loadPreferences() {
+  const defaults = {
+    currency: "IDR",
+    dateFormat: "DD/MM/YYYY",
+    theme: "system",
+    defaultPayment: "CASH"
+  };
+  const raw = localStorage.getItem(PREFERENCES_KEY);
+  if (!raw) return defaults;
+  try {
+    return { ...defaults, ...JSON.parse(raw) };
+  } catch {
+    return defaults;
+  }
+}
+
+function persistPreferences() {
+  localStorage.setItem(PREFERENCES_KEY, JSON.stringify(preferences));
+}
+
 function navigate(page) {
   const pageId = pageMap[page] || pageMap.home;
   elements.pages.forEach((item) => item.classList.toggle("active", item.id === pageId));
@@ -206,6 +238,7 @@ function renderAll() {
   ensureActiveFiltersStillExist();
   renderFilterSummary();
   renderFilterChips();
+  renderPreferences();
   elements.activeMonthLabel.textContent = formatMonth(elements.summaryMonth.value);
   renderHome();
   renderTransactions();
@@ -608,6 +641,9 @@ function resetForm() {
   fillSelect(elements.category, state.types);
   syncMainCategory(elements.type.value || state.types[0]);
   fillSelect(elements.paymentMethod, state.paymentMethods);
+  if (state.paymentMethods.includes(preferences.defaultPayment)) {
+    elements.paymentMethod.value = preferences.defaultPayment;
+  }
 }
 
 function resetMasterData() {
@@ -618,6 +654,35 @@ function resetMasterData() {
   state.paymentMethods = structuredClone(defaults.paymentMethods);
   persist();
   renderAll();
+}
+
+function deleteAllTransactions() {
+  if (!confirm("Hapus semua transaksi? Data yang sudah dihapus tidak bisa dikembalikan kecuali dari backup.")) return;
+  state.transactions = [];
+  persist();
+  renderAll();
+}
+
+function renderPreferences() {
+  elements.preferenceCurrency.value = preferences.currency;
+  elements.preferenceDateFormat.value = preferences.dateFormat;
+  elements.preferenceTheme.value = preferences.theme;
+  fillSelect(elements.preferenceDefaultPayment, state.paymentMethods);
+  if (state.paymentMethods.includes(preferences.defaultPayment)) {
+    elements.preferenceDefaultPayment.value = preferences.defaultPayment;
+  } else if (state.paymentMethods.length) {
+    preferences.defaultPayment = state.paymentMethods[0];
+    elements.preferenceDefaultPayment.value = preferences.defaultPayment;
+    persistPreferences();
+  }
+}
+
+function savePreferencesFromForm() {
+  preferences.currency = elements.preferenceCurrency.value;
+  preferences.dateFormat = elements.preferenceDateFormat.value;
+  preferences.theme = elements.preferenceTheme.value;
+  preferences.defaultPayment = elements.preferenceDefaultPayment.value;
+  persistPreferences();
 }
 
 function exportBackup() {
