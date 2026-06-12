@@ -433,7 +433,58 @@ select:focus {
 }
 
 .toast.update-toast {
-  gap: 9px;
+  padding: 8px 10px 8px 14px;
+}
+
+.update-toast-body {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+}
+
+.update-toast-text {
+  flex: 1;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.3;
+}
+
+.update-toast-btn {
+  flex-shrink: 0;
+  border: none;
+  border-radius: 10px;
+  background: var(--brand);
+  color: #fff;
+  padding: 5px 14px;
+  font-size: 0.78rem;
+  font-weight: 800;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 120ms ease;
+}
+
+.update-toast-btn:active {
+  background: var(--brand-dark, #0d6357);
+}
+
+.update-toast-close {
+  flex-shrink: 0;
+  border: none;
+  background: none;
+  color: var(--muted);
+  font-size: 1.1rem;
+  line-height: 1;
+  padding: 2px 4px;
+  cursor: pointer;
+  opacity: 0.6;
+  transition: opacity 120ms ease;
+}
+
+.update-toast-close:hover,
+.update-toast-close:active {
+  opacity: 1;
 }
 
 .toast-actions {

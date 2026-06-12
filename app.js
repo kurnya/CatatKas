@@ -1,6 +1,6 @@
 const STORAGE_KEY = "catatan_keuangan_pwa_v1";
 const PREFERENCES_KEY = "catatan_keuangan_preferences_v1";
-const APP_VERSION = "1.0.2";
+const APP_VERSION = "1.0.3";
 const IS_DEV = location.hostname === "localhost" || location.hostname === "127.0.0.1";
 const UPDATE_KEYS = {
   currentVersion: "catatkas_current_version",
@@ -237,17 +237,41 @@ function bindEvents() {
   elements.installButton.hidden = true;
 
   if (isRunningStandalone()) {
-    // App is already installed and running as PWA — never show install button
+    // App is already installed and running as PWA/TWA — never show install button
     console.log("[PWA Debug] Running in standalone mode, install button stays hidden");
   } else {
     window.addEventListener("beforeinstallprompt", (event) => {
       console.log("[PWA Debug] beforeinstallprompt event fired");
       event.preventDefault();
+      // Double-check: hide button if running inside TWA/APK
+      if (isRunningStandalone()) {
+        elements.installButton.hidden = true;
+        return;
+      }
       deferredPrompt = event;
       elements.installButton.hidden = false;
       console.log("[PWA Debug] deferredPrompt saved, button visible");
     });
+
+    // Deferred check: TWA may not report standalone immediately on page load
+    window.addEventListener("load", () => {
+      window.setTimeout(() => {
+        if (isRunningStandalone()) {
+          elements.installButton.hidden = true;
+          deferredPrompt = null;
+          console.log("[PWA Debug] Standalone detected after load, hiding install button");
+        }
+      }, 500);
+    });
   }
+
+  // Listen for display-mode changes (e.g., user installs/uninstalls)
+  window.matchMedia("(display-mode: standalone)").addEventListener("change", (e) => {
+    if (e.matches) {
+      elements.installButton.hidden = true;
+      deferredPrompt = null;
+    }
+  });
 
   window.addEventListener("appinstalled", () => {
     console.log("[PWA Debug] appinstalled event fired - installation successful");
@@ -1242,8 +1266,11 @@ async function installApp() {
 
 function isRunningStandalone() {
   return window.matchMedia("(display-mode: standalone)").matches || 
+         window.matchMedia("(display-mode: fullscreen)").matches ||
+         window.matchMedia("(display-mode: minimal-ui)").matches ||
          window.navigator.standalone === true || 
-         document.referrer.startsWith("android-app://");
+         document.referrer.startsWith("android-app://") ||
+         (window.outerHeight === 0 && window.outerWidth > 0);
 }
 
 function isIOSDevice() {
@@ -1390,7 +1417,7 @@ async function handleUpdateReady(worker, manual = false) {
     showUpdateModal(updateVersion);
   } else if (!IS_DEV && !updateModalShownThisSession && shouldShowUpdatePrompt(updateVersion)) {
     updateModalShownThisSession = true;
-    showUpdateModal(updateVersion);
+    showUpdateAvailableToast(updateVersion);
   }
   return true;
 }
@@ -1577,29 +1604,35 @@ function showUpdateAvailableToast(updateVersion) {
   toast.className = "toast info update-toast";
   toast.setAttribute("role", "status");
 
-  const message = document.createElement("strong");
-  message.textContent = `Update CatatKas tersedia${updateVersion ? `: v${updateVersion}` : ""}.`;
+  const body = document.createElement("div");
+  body.className = "update-toast-body";
 
-  const actions = document.createElement("div");
-  actions.className = "toast-actions";
+  const text = document.createElement("span");
+  text.className = "update-toast-text";
+  text.textContent = `Update tersedia${updateVersion ? ` (v${updateVersion})` : ""}`;
 
-  const laterButton = document.createElement("button");
-  laterButton.type = "button";
-  laterButton.className = "ghost-button";
-  laterButton.textContent = "Nanti";
-  laterButton.addEventListener("click", () => {
+  const updateBtn = document.createElement("button");
+  updateBtn.type = "button";
+  updateBtn.className = "update-toast-btn";
+  updateBtn.textContent = "Update";
+  updateBtn.addEventListener("click", () => {
+    toast.remove();
+    updateToastElement = null;
+    applyAppUpdate();
+  });
+
+  const closeBtn = document.createElement("button");
+  closeBtn.type = "button";
+  closeBtn.className = "update-toast-close";
+  closeBtn.setAttribute("aria-label", "Tutup");
+  closeBtn.textContent = "×";
+  closeBtn.addEventListener("click", () => {
     toast.remove();
     updateToastElement = null;
   });
 
-  const updateButton = document.createElement("button");
-  updateButton.type = "button";
-  updateButton.className = "primary-button";
-  updateButton.textContent = "Update Sekarang";
-  updateButton.addEventListener("click", applyAppUpdate);
-
-  actions.append(laterButton, updateButton);
-  toast.append(message, actions);
+  body.append(text, updateBtn, closeBtn);
+  toast.appendChild(body);
   elements.toastContainerTop.appendChild(toast);
   updateToastElement = toast;
 }
