@@ -1,4 +1,4 @@
-const CACHE_NAME = "money-tracker-v2";
+const CACHE_NAME = "catatkas-v1";
 const APP_SHELL = [
   "./",
   "./index.html",

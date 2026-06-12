@@ -707,7 +707,7 @@ function savePreferencesFromForm() {
 }
 
 function exportBackup() {
-  downloadFile(`catatan-keuangan-${today()}.json`, JSON.stringify(state, null, 2), "application/json");
+  downloadFile(`catatkas-${today()}.json`, JSON.stringify(state, null, 2), "application/json");
 }
 
 function exportCsv() {

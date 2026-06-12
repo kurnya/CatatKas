@@ -1,6 +1,6 @@
 {
-  "name": "Catatan Keuangan",
-  "short_name": "Keuangan",
+  "name": "CatatKas",
+  "short_name": "CatatKas",
   "description": "Aplikasi PWA ringan untuk mencatat pemasukan dan pengeluaran harian.",
   "start_url": "./index.html",
   "scope": "./",
