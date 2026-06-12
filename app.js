@@ -1216,7 +1216,7 @@ function registerServiceWorker() {
     window.location.reload();
   });
 
-  navigator.serviceWorker.register("./service-worker.js", { scope: "./" })
+  navigator.serviceWorker.register("/CatatKas/service-worker.js", { scope: "/CatatKas/" })
     .then((registration) => {
       serviceWorkerRegistration = registration;
       if (registration.waiting) {
@@ -1809,6 +1809,7 @@ function escapeHtml(value) {
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;");
 }
+
 
 
 
