@@ -126,11 +126,34 @@ const elements = {
 
 init();
 
+
+function logInstallDebugInfo() {
+  const userAgent = navigator.userAgent;
+  const platform = navigator.platform;
+  const isAndroid = /Android/.test(userAgent);
+  const isChrome = /Chrome|Chromium|CriOS/.test(userAgent);
+  const isStandalone = isRunningStandalone();
+  
+  console.log("[PWA Debug] ===== PWA Installation Debug Info =====");
+  console.log("[PWA Debug] App Version:", APP_VERSION);
+  console.log("[PWA Debug] Platform:", platform);
+  console.log("[PWA Debug] User Agent:", userAgent);
+  console.log("[PWA Debug] Is Android:", isAndroid);
+  console.log("[PWA Debug] Is Chrome:", isChrome);
+  console.log("[PWA Debug] Is Standalone:", isStandalone);
+  console.log("[PWA Debug] deferredPrompt ready:", deferredPrompt !== null);
+  console.log("[PWA Debug] Install button hidden:", elements.installButton.hidden);
+  console.log("[PWA Debug] =========================================");
+}
 function init() {
   const month = today().slice(0, 7);
   elements.summaryMonth.value = month;
   elements.historyMonth.value = month;
   elements.date.value = today();
+  
+  // Log initial debug info
+  logInstallDebugInfo();
+  
   bindEvents();
   showUpdateSuccessToastIfNeeded();
   renderAll();
@@ -212,14 +235,20 @@ function bindEvents() {
   elements.installButton.hidden = true;
 
   window.addEventListener("beforeinstallprompt", (event) => {
+    console.log("[PWA Debug] beforeinstallprompt event fired");
     event.preventDefault();
     if (!isRunningStandalone()) {
       deferredPrompt = event;
       elements.installButton.hidden = false;
+      console.log("[PWA Debug] deferredPrompt saved, button visible");
+      console.log("[PWA Debug] User agent:", navigator.userAgent);
+    } else {
+      console.log("[PWA Debug] Running in standalone mode, hiding button");
     }
   });
 
   window.addEventListener("appinstalled", () => {
+    console.log("[PWA Debug] appinstalled event fired - installation successful");
     deferredPrompt = null;
     elements.installButton.hidden = true;
     closeModal(false);
@@ -559,6 +588,7 @@ function showFormModal(options = {}) {
 
 function showInstallGuideModal(mode = "unsupported") {
   const iosMode = mode === "ios";
+  const androidMode = mode === "android";
   const content = document.createElement("div");
   content.className = "modal-dynamic-content";
 
@@ -576,6 +606,25 @@ function showInstallGuideModal(mode = "unsupported") {
       steps.appendChild(item);
     });
     content.appendChild(steps);
+  } else if (androidMode) {
+    console.log("[PWA Debug] Showing Android install guide");
+    const steps = document.createElement("ol");
+    steps.className = "install-steps";
+    [
+      "Buka menu Chrome (tombol titik tiga di sudut kanan atas).",
+      "Pilih Install app atau Tambahkan ke layar utama.",
+      "Ikuti instruksi yang muncul untuk menyelesaikan instalasi."
+    ].forEach((step) => {
+      const item = document.createElement("li");
+      item.textContent = step;
+      steps.appendChild(item);
+    });
+    content.appendChild(steps);
+    
+    const note = document.createElement("p");
+    note.className = "helper-text";
+    note.textContent = "Jika opsi tidak muncul, coba refresh halaman atau gunakan Chrome versi terbaru.";
+    content.appendChild(note);
   } else {
     const message = document.createElement("p");
     message.textContent = "Browser ini belum mendukung install otomatis. Coba gunakan Chrome atau tambahkan aplikasi melalui menu browser.";
@@ -583,8 +632,8 @@ function showInstallGuideModal(mode = "unsupported") {
   }
 
   return showConfirmModal({
-    title: iosMode ? "Panduan Install" : "Install Belum Didukung",
-    message: iosMode ? "Ikuti langkah berikut untuk menambahkan CatatKas ke layar utama." : "CatatKas tetap bisa digunakan dari browser ini.",
+    title: iosMode ? "Panduan Install iOS" : androidMode ? "Panduan Install Android" : "Install Belum Didukung",
+    message: iosMode ? "Ikuti langkah berikut untuk menambahkan CatatKas ke layar utama." : androidMode ? "Ikuti langkah berikut menggunakan menu Chrome." : "CatatKas tetap bisa digunakan dari browser ini.",
     confirmText: "Mengerti",
     cancelText: "Tutup",
     type: "info",
@@ -1168,20 +1217,39 @@ async function importBackup(event) {
 }
 
 async function installApp() {
+  console.log("[PWA Debug] Install button clicked");
+  
   if (isRunningStandalone()) {
+    console.log("[PWA Debug] Already in standalone mode");
     elements.installButton.hidden = true;
     return;
   }
 
-  if (deferredPrompt) {
-    deferredPrompt.prompt();
-    await deferredPrompt.userChoice;
-    deferredPrompt = null;
-    elements.installButton.hidden = isRunningStandalone();
+  if (!deferredPrompt) {
+    console.log("[PWA Debug] deferredPrompt is null - beforeinstallprompt never fired");
+    console.log("[PWA Debug] Device:", navigator.userAgent);
+    showInstallGuideModal(isIOSDevice() ? "ios" : "android");
     return;
   }
 
-  showInstallGuideModal(isIOSDevice() ? "ios" : "unsupported");
+  console.log("[PWA Debug] deferredPrompt exists, showing install prompt");
+  try {
+    const result = await deferredPrompt.prompt();
+    console.log("[PWA Debug] Prompt result:", result);
+    
+    const userChoice = await deferredPrompt.userChoice;
+    console.log("[PWA Debug] User choice:", userChoice.outcome);
+    
+    if (userChoice.outcome === "accepted") {
+      console.log("[PWA Debug] User accepted install");
+    } else {
+      console.log("[PWA Debug] User dismissed install");
+    }
+    
+    deferredPrompt = null;
+  } catch (error) {
+    console.error("[PWA Debug] Install prompt error:", error);
+  }
 }
 
 function isRunningStandalone() {
@@ -1806,6 +1874,9 @@ function escapeHtml(value) {
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;");
 }
+
+
+
 
 
 
