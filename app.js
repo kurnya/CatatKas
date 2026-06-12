@@ -34,7 +34,7 @@ const pageMap = {
 // Detect if on GitHub Pages or localhost
 const isGitHubPages = window.location.hostname.includes('github.io');
 const repoName = 'CatatKas';
-const BASE_URL = isGitHubPages ? /${repoName}/ : '/';
+const BASE_URL = isGitHubPages ? `/${repoName}/` : '/';
 
 const state = loadState();
 const preferences = loadPreferences();
