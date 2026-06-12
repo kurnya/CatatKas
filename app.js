@@ -31,6 +31,11 @@ const pageMap = {
   settings: "settingsPage"
 };
 
+// Detect if on GitHub Pages or localhost
+const isGitHubPages = window.location.hostname.includes('github.io');
+const repoName = 'CatatKas';
+const BASE_URL = isGitHubPages ? /${repoName}/ : '/';
+
 const state = loadState();
 const preferences = loadPreferences();
 let deferredPrompt = null;
@@ -1216,7 +1221,7 @@ function registerServiceWorker() {
     window.location.reload();
   });
 
-  navigator.serviceWorker.register("/CatatKas/service-worker.js", { scope: "/CatatKas/" })
+  navigator.serviceWorker.register(BASE_URL + "service-worker.js", { scope: BASE_URL })
     .then((registration) => {
       serviceWorkerRegistration = registration;
       if (registration.waiting) {
@@ -1809,6 +1814,7 @@ function escapeHtml(value) {
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;");
 }
+
 
 
 
