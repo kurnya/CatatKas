@@ -2,6 +2,7 @@
   "name": "CatatKas",
   "short_name": "CatatKas",
   "description": "Aplikasi pencatat keuangan pribadi berbasis PWA",
+  "id": "/",
   "start_url": "/CatatKas/",
   "scope": "/CatatKas/",
   "display": "standalone",
