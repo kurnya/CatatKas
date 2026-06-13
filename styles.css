@@ -629,21 +629,6 @@ select:focus {
   font-weight: 850;
 }
 
-.update-modal-content {
-  gap: 12px;
-}
-
-.update-modal-actions {
-  display: grid;
-  gap: 8px;
-}
-
-.update-modal-actions .primary-button,
-.update-modal-actions .ghost-button {
-  width: 100%;
-  min-height: 44px;
-}
-
 .muted-button {
   color: var(--muted);
 }

@@ -1459,7 +1459,7 @@ async function handleUpdateReady(worker, manual = false) {
   renderUpdateSettings();
 
   if (manual) {
-    showUpdateModal(updateVersion);
+    showUpdateAvailableToast(updateVersion);
   } else if (!IS_DEV && !updateModalShownThisSession && shouldShowUpdatePrompt(updateVersion)) {
     updateModalShownThisSession = true;
     showUpdateAvailableToast(updateVersion);
@@ -1486,62 +1486,6 @@ function requestServiceWorkerVersion(worker) {
     };
 
     worker.postMessage({ type: "CHECK_UPDATE" }, [channel.port2]);
-  });
-}
-
-function showUpdateModal(updateVersion) {
-  const content = document.createElement("div");
-  content.className = "modal-dynamic-content update-modal-content";
-
-  const note = document.createElement("p");
-  note.className = "helper-text";
-  note.textContent = "Update hanya memperbarui aplikasi. Data transaksi tetap tersimpan di perangkat Anda.";
-
-  const versionText = document.createElement("p");
-  versionText.className = "helper-text";
-  versionText.textContent = `Versi saat ini: v${APP_VERSION}. Versi baru: v${updateVersion}.`;
-
-  const actions = document.createElement("div");
-  actions.className = "update-modal-actions";
-
-  const installButton = document.createElement("button");
-  installButton.type = "button";
-  installButton.className = "primary-button";
-  installButton.textContent = "Install Sekarang";
-  installButton.addEventListener("click", () => {
-    closeModal(true);
-    applyAppUpdate();
-  });
-
-  const remindButton = document.createElement("button");
-  remindButton.type = "button";
-  remindButton.className = "ghost-button";
-  remindButton.textContent = "Ingatkan Nanti";
-  remindButton.addEventListener("click", () => {
-    remindUpdateLater(updateVersion);
-    closeModal(false);
-  });
-
-  const ignoreButton = document.createElement("button");
-  ignoreButton.type = "button";
-  ignoreButton.className = "ghost-button muted-button";
-  ignoreButton.textContent = "Abaikan";
-  ignoreButton.addEventListener("click", () => {
-    ignoreUpdate(updateVersion);
-    closeModal(false);
-  });
-
-  actions.append(installButton, remindButton, ignoreButton);
-  content.append(versionText, note, actions);
-
-  openModal({
-    title: "Update CatatKas Tersedia",
-    message: "Versi baru CatatKas tersedia. Update ini dapat berisi perbaikan tampilan, peningkatan fitur, atau perbaikan bug. Data keuangan Anda tetap aman di perangkat ini.",
-    confirmText: "",
-    cancelText: "",
-    type: "info",
-    icon: "↑",
-    content
   });
 }
 
