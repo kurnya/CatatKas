@@ -1,6 +1,6 @@
 const STORAGE_KEY = "catatan_keuangan_pwa_v1";
 const PREFERENCES_KEY = "catatan_keuangan_preferences_v1";
-const APP_VERSION = "1.1.0";
+const APP_VERSION = "1.1.1";
 const IS_DEV = location.hostname === "localhost" || location.hostname === "127.0.0.1";
 const UPDATE_KEYS = {
   currentVersion: "catatkas_current_version",
@@ -643,7 +643,7 @@ function showInstallGuideModal(mode = "unsupported") {
     steps.className = "install-steps";
     [
       "Buka menu Chrome (tombol titik tiga di sudut kanan atas).",
-      "Pilih Install app atau Tambahkan ke layar utama.",
+      "Pilih \"Install app\" atau \"Tambahkan ke layar utama\".",
       "Ikuti instruksi yang muncul untuk menyelesaikan instalasi."
     ].forEach((step) => {
       const item = document.createElement("li");
@@ -656,6 +656,11 @@ function showInstallGuideModal(mode = "unsupported") {
     note.className = "helper-text";
     note.textContent = "Jika opsi tidak muncul, coba refresh halaman atau gunakan Chrome versi terbaru.";
     content.appendChild(note);
+
+    const settingsNote = document.createElement("p");
+    settingsNote.className = "helper-text";
+    settingsNote.innerHTML = "<strong>Tips:</strong> Anda juga bisa buka <strong>Pengaturan</strong> > <strong>Mode Offline</strong> untuk melihat status koneksi aplikasi.";
+    content.appendChild(settingsNote);
   } else {
     const message = document.createElement("p");
     message.textContent = "Browser ini belum mendukung install otomatis. Coba gunakan Chrome atau tambahkan aplikasi melalui menu browser.";

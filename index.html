@@ -21,7 +21,13 @@
         <p class="eyebrow">CatatKas</p>
         <h1 id="pageTitle">Beranda</h1>
       </div>
-      <button class="ghost-button compact" id="installButton" hidden>Install</button>
+      <button class="install-info-btn" id="installButton" hidden aria-label="Panduan install aplikasi" title="Cara install aplikasi">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/>
+          <line x1="12" y1="7" x2="12" y2="13"/>
+          <circle cx="12" cy="16.5" r="0.5" fill="currentColor" stroke="none"/>
+        </svg>
+      </button>
     </header>
 
     <main class="app-shell">
@@ -297,7 +303,7 @@
             <p class="helper-text">Update hanya memperbarui file aplikasi. Data transaksi tetap tersimpan di perangkat Anda.</p>
           </div>
           <div class="update-info">
-            <strong id="updateAppName">CatatKas v1.1.0</strong>
+            <strong id="updateAppName">CatatKas v1.1.1</strong>
             <span>Status: <b id="updateStatusText">Menggunakan versi terbaru</b></span>
           </div>
           <div class="settings-actions update-actions">
@@ -312,7 +318,7 @@
           </div>
           <div class="about-list">
             <div><span>Nama aplikasi</span><strong>CatatKas</strong></div>
-            <div><span>Versi aplikasi saat ini</span><strong id="appVersionLabel">1.1.0</strong></div>
+            <div><span>Versi aplikasi saat ini</span><strong id="appVersionLabel">1.1.1</strong></div>
             <p class="helper-text">Data disimpan secara lokal di perangkat menggunakan localStorage.</p>
           </div>
         </section>

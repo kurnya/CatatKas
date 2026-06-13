@@ -77,6 +77,30 @@ h2 {
   backdrop-filter: blur(14px);
 }
 
+.install-info-btn {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 1.5px solid var(--brand);
+  border-radius: 50%;
+  background: transparent;
+  color: var(--brand);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 140ms ease, color 140ms ease;
+}
+
+.install-info-btn:hover,
+.install-info-btn:active {
+  background: var(--brand);
+  color: #fff;
+}
+
+.install-info-btn svg {
+  display: block;
+}
+
 .eyebrow,
 .soft-label {
   display: block;
