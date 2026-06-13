@@ -1,4 +1,4 @@
-package io.github.kurnya.twa;
+package com.kurnya.catatkas;
 
 
 
@@ -11,4 +11,3 @@ public class DelegationService extends
         
     }
 }
-

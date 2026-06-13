@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.kurnya.catatkas",
+      "sha256_cert_fingerprints": [
+        "72:BA:DE:69:2A:64:8E:8D:A1:2A:43:7F:A2:D1:4B:50:1F:4F:83:2A:62:4F:93:CD:D5:AC:5B:3A:AC:46:F4:98"
+      ]
+    }
+  }
+]

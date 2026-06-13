@@ -1,0 +1,25 @@
+# Android and Gradle build output
+.gradle/
+build/
+app/build/
+
+# Packaged Android artifacts
+*.apk
+*.aab
+*.apks
+*.idsig
+
+# Signing keys and local signing config
+*.keystore
+*.jks
+key.properties
+local.properties
+
+# Logs
+*.log
+
+# OS and editor files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
