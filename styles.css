@@ -1296,25 +1296,26 @@ select:focus {
 
 body.theme-dark {
   color-scheme: dark;
-  --bg: #071f1c;
-  --panel: #0d2a26;
-  --text: #edf8f5;
-  --muted: #9db2ad;
-  --line: #21423c;
+  --bg: #111318;
+  --panel: #1a1d24;
+  --text: #e4e6eb;
+  --muted: #8b8fa4;
+  --line: #262a34;
   --brand: #2dd4bf;
-  --brand-dark: #7ddbd0;
-  --soft: #123b35;
+  --brand-dark: #5eead4;
+  --soft: #1e222b;
   --income: #34d399;
-  --expense: #f87171;
+  --expense: #fb7185;
   --warning: #fbbf24;
-  --info: #22d3ee;
+  --info: #38bdf8;
   --transfer: #a78bfa;
-  --shadow: 0 10px 24px rgba(0, 0, 0, 0.34);
-  --shadow-soft: 0 6px 18px rgba(0, 0, 0, 0.26);
+  --shadow: 0 8px 28px rgba(0, 0, 0, 0.4);
+  --shadow-soft: 0 4px 16px rgba(0, 0, 0, 0.3);
 }
 
 body.theme-dark .app-header {
-  background: rgba(7, 31, 28, 0.92);
+  background: rgba(17, 19, 24, 0.94);
+  border-bottom-color: var(--line);
 }
 
 body.theme-dark .install-info-btn,
@@ -1328,12 +1329,40 @@ body.theme-dark .bottom-nav {
   background: var(--panel);
 }
 
+body.theme-dark .summary-card,
+body.theme-dark .stat-card {
+  border: 1px solid var(--line);
+}
+
+body.theme-dark .balance-card {
+  background: var(--soft);
+  border-color: rgba(45, 212, 191, 0.18);
+}
+
 body.theme-dark input,
 body.theme-dark select,
 body.theme-dark textarea {
-  background: #09231f;
+  background: #14161c;
   border-color: var(--line);
   color: var(--text);
+}
+
+body.theme-dark input:focus,
+body.theme-dark select:focus,
+body.theme-dark textarea:focus {
+  border-color: rgba(45, 212, 191, 0.5);
+  box-shadow: 0 0 0 3px rgba(45, 212, 191, 0.1);
+}
+
+body.theme-dark .chip {
+  background: var(--soft);
+  border-color: var(--line);
+  color: var(--muted);
+}
+
+body.theme-dark .chip:hover {
+  border-color: var(--brand);
+  color: var(--brand);
 }
 
 body.theme-dark .ghost-button,
@@ -1347,7 +1376,7 @@ body.theme-dark .help-guide-card,
 body.theme-dark .transaction-card,
 body.theme-dark .master-item,
 body.theme-dark .install-tab {
-  background: #0f302b;
+  background: var(--soft);
   border-color: var(--line);
   color: var(--text);
 }
@@ -1356,9 +1385,9 @@ body.theme-dark .install-tabs,
 body.theme-dark .transaction-meta span,
 body.theme-dark .close-sheet-button,
 body.theme-dark .modal-close-button {
-  background: #0a241f;
+  background: var(--panel);
   border-color: var(--line);
-  color: var(--text);
+  color: var(--muted);
 }
 
 body.theme-dark .install-tab.active,
@@ -1368,9 +1397,35 @@ body.theme-dark .primary-button {
   color: #fff;
 }
 
+body.theme-dark .primary-button:hover {
+  background: #0d9488;
+  border-color: #0d9488;
+}
+
+body.theme-dark .ghost-button:hover,
+body.theme-dark .file-button:hover,
+body.theme-dark .small-button:hover {
+  background: var(--panel);
+  border-color: var(--brand);
+  color: var(--brand);
+}
+
+body.theme-dark .text-button {
+  color: var(--brand);
+}
+
 body.theme-dark .danger-button {
-  background: rgba(248, 113, 113, 0.12);
-  border-color: rgba(248, 113, 113, 0.28);
+  background: rgba(251, 113, 133, 0.1);
+  border-color: rgba(251, 113, 133, 0.24);
+  color: #fb7185;
+}
+
+body.theme-dark .danger-button:hover {
+  background: rgba(251, 113, 133, 0.18);
+}
+
+body.theme-dark .danger-zone {
+  border-color: rgba(251, 113, 133, 0.16);
 }
 
 body.theme-dark .empty-state {
@@ -1379,12 +1434,76 @@ body.theme-dark .empty-state {
 }
 
 body.theme-dark .bar-track {
-  background: #14342f;
+  background: var(--soft);
+}
+
+body.theme-dark .bar-fill {
+  background: var(--brand);
 }
 
 body.theme-dark .sheet-overlay,
 body.theme-dark .modal-overlay {
-  background: rgba(0, 0, 0, 0.58);
+  background: rgba(0, 0, 0, 0.6);
+}
+
+body.theme-dark .nav-item {
+  color: var(--muted);
+}
+
+body.theme-dark .nav-item.active {
+  color: var(--brand);
+}
+
+body.theme-dark .bottom-nav {
+  border-top-color: var(--line);
+}
+
+body.theme-dark .toast.success {
+  background: rgba(52, 211, 153, 0.14);
+  border-color: rgba(52, 211, 153, 0.28);
+  color: #6ee7b7;
+}
+
+body.theme-dark .toast.warning {
+  background: rgba(251, 191, 36, 0.12);
+  border-color: rgba(251, 191, 36, 0.26);
+  color: #fcd34d;
+}
+
+body.theme-dark .toast.info {
+  background: rgba(56, 189, 248, 0.12);
+  border-color: rgba(56, 189, 248, 0.26);
+  color: #7dd3fc;
+}
+
+body.theme-dark .toast.danger,
+body.theme-dark .toast.error {
+  background: rgba(251, 113, 133, 0.12);
+  border-color: rgba(251, 113, 133, 0.26);
+  color: #fda4af;
+}
+
+body.theme-dark .download-guide-card {
+  background: var(--soft);
+  border-color: rgba(45, 212, 191, 0.12);
+}
+
+body.theme-dark .offline-status-badge.online {
+  background: rgba(52, 211, 153, 0.14);
+  color: #6ee7b7;
+}
+
+body.theme-dark .settings-card {
+  border-color: var(--line);
+}
+
+body.theme-dark .master-item {
+  background: var(--soft);
+}
+
+body.theme-dark .transaction-card {
+  background: var(--panel);
+  border-color: var(--line);
 }
 
 @media (min-width: 680px) {

@@ -1,6 +1,6 @@
 const STORAGE_KEY = "catatan_keuangan_pwa_v1";
 const PREFERENCES_KEY = "catatan_keuangan_preferences_v1";
-const APP_VERSION = "1.1.1";
+const APP_VERSION = "1.1.2";
 const IS_DEV = location.hostname === "localhost" || location.hostname === "127.0.0.1";
 const GITHUB_RELEASE_URL = "https://github.com/kurnya/CatatKas/releases/latest";
 const ANDROID_APK_DOWNLOAD_URL = `${GITHUB_RELEASE_URL}/download/catatkas-android.apk`;
@@ -1265,7 +1265,7 @@ function applyThemePreference() {
   document.body.classList.toggle("theme-dark", darkMode);
   document.body.classList.toggle("theme-light", !darkMode);
   if (elements.themeMeta) {
-    elements.themeMeta.setAttribute("content", darkMode ? "#071f1c" : "#0f766e");
+    elements.themeMeta.setAttribute("content", darkMode ? "#111318" : "#0f766e");
   }
 }
 
@@ -1510,9 +1510,17 @@ function registerServiceWorker() {
     return;
   }
 
-  navigator.serviceWorker.addEventListener("controllerchange", () => {
+  navigator.serviceWorker.addEventListener("controllerchange", async () => {
     if (refreshingForUpdate) return;
     refreshingForUpdate = true;
+    try {
+      if ("caches" in window) {
+        const keys = await caches.keys();
+        await Promise.all(
+          keys.filter((key) => key.startsWith("catatkas-cache-")).map((key) => caches.delete(key))
+        );
+      }
+    } catch (_) { /* ignore cache clear errors */ }
     window.location.reload();
   });
 
@@ -1681,6 +1689,7 @@ function applyAppUpdate() {
     return;
   }
 
+  showToast("Memperbarui CatatKas...", "info");
   localStorage.setItem(UPDATE_KEYS.successPending, "1");
   worker.postMessage({ type: "SKIP_WAITING" });
 }
