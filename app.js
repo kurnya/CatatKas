@@ -9,7 +9,8 @@ const UPDATE_KEYS = {
   availableVersion: "catatkas_update_available_version",
   remindLaterUntil: "catatkas_update_remind_later_until",
   ignoredVersion: "catatkas_ignored_update_version",
-  successPending: "catatkas_update_success_pending"
+  successPending: "catatkas_update_success_pending",
+  cacheRefreshPending: "catatkas_cache_refresh_pending"
 };
 
 const defaults = {
@@ -1560,6 +1561,7 @@ async function checkForAppUpdate(manual = false) {
     const hasUpdate = await handleUpdateReady(pendingServiceWorker, manual);
     elements.checkUpdateButton.disabled = false;
     elements.checkUpdateButton.textContent = "Cek Update";
+    if (manual && hasUpdate) applyAppUpdate();
     return hasUpdate;
   }
 
@@ -1579,12 +1581,16 @@ async function checkForAppUpdate(manual = false) {
     const hasUpdate = await handleUpdateReady(pendingServiceWorker, manual);
     elements.checkUpdateButton.disabled = false;
     elements.checkUpdateButton.textContent = "Cek Update";
+    if (manual && hasUpdate) applyAppUpdate();
     return hasUpdate;
   }
 
   localStorage.removeItem(UPDATE_KEYS.availableVersion);
   pendingServiceWorker = null;
-  if (manual) showToast("CatatKas sudah menggunakan versi terbaru.", "success");
+  if (manual) {
+    await refreshAppShellFromNetwork();
+    return false;
+  }
   elements.checkUpdateButton.disabled = false;
   elements.checkUpdateButton.textContent = "Cek Update";
   renderUpdateSettings();
@@ -1624,7 +1630,7 @@ async function handleUpdateReady(worker, manual = false) {
   renderUpdateSettings();
 
   if (manual) {
-    showUpdateAvailableToast(updateVersion);
+    showToast("Update ditemukan. CatatKas sedang diperbarui...", "info");
   } else if (!IS_DEV && !updateModalShownThisSession && shouldShowUpdatePrompt(updateVersion)) {
     updateModalShownThisSession = true;
     showUpdateAvailableToast(updateVersion);
@@ -1668,6 +1674,36 @@ function applyAppUpdate() {
 
   localStorage.setItem(UPDATE_KEYS.successPending, "1");
   worker.postMessage({ type: "SKIP_WAITING" });
+}
+
+async function refreshAppShellFromNetwork() {
+  if (!navigator.onLine) {
+    showToast("Hubungkan internet untuk memperbarui file aplikasi.", "warning");
+    return;
+  }
+
+  elements.checkUpdateButton.disabled = true;
+  elements.checkUpdateButton.textContent = "Memperbarui...";
+  elements.updateStatusText.textContent = "Mengambil file aplikasi terbaru...";
+
+  try {
+    if ("caches" in window) {
+      const keys = await caches.keys();
+      await Promise.all(
+        keys
+          .filter((key) => key.startsWith("catatkas-cache-"))
+          .map((key) => caches.delete(key))
+      );
+    }
+
+    localStorage.setItem(UPDATE_KEYS.cacheRefreshPending, "1");
+    window.location.reload();
+  } catch {
+    elements.checkUpdateButton.disabled = false;
+    elements.checkUpdateButton.textContent = "Cek Update";
+    renderUpdateSettings();
+    showToast("Gagal memperbarui cache aplikasi. Coba refresh halaman.", "warning");
+  }
 }
 
 function remindUpdateLater(updateVersion) {
@@ -1740,15 +1776,22 @@ function parseVersion(version) {
 
 function showUpdateSuccessToastIfNeeded() {
   const successPending = localStorage.getItem(UPDATE_KEYS.successPending) === "1";
+  const cacheRefreshPending = localStorage.getItem(UPDATE_KEYS.cacheRefreshPending) === "1";
   localStorage.setItem(UPDATE_KEYS.currentVersion, APP_VERSION);
-  if (!successPending) return;
+  if (!successPending && !cacheRefreshPending) return;
 
   localStorage.removeItem(UPDATE_KEYS.successPending);
+  localStorage.removeItem(UPDATE_KEYS.cacheRefreshPending);
   localStorage.removeItem(UPDATE_KEYS.availableVersion);
   localStorage.removeItem(UPDATE_KEYS.remindLaterUntil);
   localStorage.removeItem(UPDATE_KEYS.ignoredVersion);
   updateModalShownThisSession = false;
-  window.setTimeout(() => showToast("CatatKas berhasil diperbarui.", "success"), 300);
+  window.setTimeout(() => {
+    showToast(
+      successPending ? "CatatKas berhasil diperbarui." : "File aplikasi berhasil dimuat ulang. Data lokal tetap aman.",
+      "success"
+    );
+  }, 300);
 }
 
 function showUpdateAvailableToast(updateVersion) {
