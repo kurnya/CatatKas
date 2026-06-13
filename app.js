@@ -59,10 +59,6 @@ const elements = {
   pages: document.querySelectorAll(".page"),
   navItems: document.querySelectorAll(".nav-item"),
   installButton: document.querySelector("#installButton"),
-  installHelpOverlay: document.querySelector("#installHelpOverlay"),
-  installHelpSheet: document.querySelector("#installHelpSheet"),
-  closeInstallHelpSheet: document.querySelector("#closeInstallHelpSheet"),
-  openSettingsFromHelp: document.querySelector("#openSettingsFromHelp"),
   downloadAppSection: document.querySelector("#downloadAppSection"),
   downloadPlatformButtons: document.querySelectorAll("[data-download-platform]"),
   downloadGuideTitle: document.querySelector("#downloadGuideTitle"),
@@ -247,13 +243,10 @@ function bindEvents() {
     button.addEventListener("click", () => addMasterItem(button.dataset.addMaster));
   });
 
-  // Header help button opens installation guidance.
+  // Header help button opens installation guidance modal.
   elements.installButton.addEventListener("click", () => {
-    openInstallHelpSheet();
+    showInstallHelpModal();
   });
-  elements.installHelpOverlay.addEventListener("click", closeInstallHelpSheet);
-  elements.closeInstallHelpSheet.addEventListener("click", closeInstallHelpSheet);
-  elements.openSettingsFromHelp.addEventListener("click", openSettingsDownloadSection);
 
   elements.downloadPlatformButtons.forEach((button) => {
     button.addEventListener("click", () => selectDownloadPlatform(button.dataset.downloadPlatform));
@@ -502,54 +495,63 @@ function openFilterSheet() {
   elements.filterOverlay.hidden = false;
   elements.filterSheet.classList.add("open");
   elements.filterSheet.setAttribute("aria-hidden", "false");
-  updateSheetBodyLock();
+  document.body.classList.add("sheet-open");
 }
 
 function closeFilterSheet() {
   elements.filterSheet.classList.remove("open");
   elements.filterSheet.setAttribute("aria-hidden", "true");
   elements.filterOverlay.hidden = true;
-  updateSheetBodyLock();
+  document.body.classList.remove("sheet-open");
 }
 
-function openInstallHelpSheet() {
-  elements.installHelpOverlay.hidden = false;
-  elements.installHelpSheet.classList.add("open");
-  elements.installHelpSheet.setAttribute("aria-hidden", "false");
-  updateSheetBodyLock();
-}
+function showInstallHelpModal() {
+  const content = document.createElement("div");
+  content.className = "modal-dynamic-content";
 
-function closeInstallHelpSheet() {
-  elements.installHelpSheet.classList.remove("open");
-  elements.installHelpSheet.setAttribute("aria-hidden", "true");
-  elements.installHelpOverlay.hidden = true;
-  updateSheetBodyLock();
-}
+  const card = document.createElement("div");
+  card.className = "download-guide-card";
 
-function updateSheetBodyLock() {
-  const filterOpen = elements.filterSheet.classList.contains("open");
-  const installHelpOpen = elements.installHelpSheet.classList.contains("open");
-  document.body.classList.toggle("sheet-open", filterOpen || installHelpOpen);
-}
+  const inner = document.createElement("div");
+  const title = document.createElement("strong");
+  title.textContent = "Download Aplikasi";
+  const desc = document.createElement("p");
+  desc.textContent = "Untuk menginstal atau memperbarui aplikasi CatatKas, buka halaman Settings, lalu masuk ke bagian Download Aplikasi.";
+  inner.append(title, desc);
+  card.appendChild(inner);
 
-function openSettingsDownloadSection() {
-  closeInstallHelpSheet();
-  navigate("settings");
-  window.setTimeout(() => {
-    if (elements.downloadAppSection && typeof elements.downloadAppSection.scrollIntoView === "function") {
-      elements.downloadAppSection.scrollIntoView({ behavior: "smooth", block: "start" });
-    }
-  }, 220);
+  const viewBtn = document.createElement("button");
+  viewBtn.type = "button";
+  viewBtn.className = "primary-button install-action-button";
+  viewBtn.textContent = "Lihat Download Aplikasi";
+  viewBtn.addEventListener("click", () => {
+    closeModal(false);
+    navigate("settings");
+    window.setTimeout(() => {
+      if (elements.downloadAppSection && typeof elements.downloadAppSection.scrollIntoView === "function") {
+        elements.downloadAppSection.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    }, 220);
+  });
+  card.appendChild(viewBtn);
+
+  content.appendChild(card);
+
+  showConfirmModal({
+    title: "Informasi Instalasi",
+    message: "Untuk menginstal atau memperbarui aplikasi CatatKas, buka halaman Settings lalu masuk ke bagian Download Aplikasi.",
+    confirmText: "Mengerti",
+    cancelText: "Tutup",
+    type: "info",
+    icon: "i",
+    content
+  });
 }
 
 function handleGlobalKeydown(event) {
   if (event.key === "Escape") {
     if (!elements.appModalOverlay.hidden) {
       closeModal(false);
-      return;
-    }
-    if (elements.installHelpSheet.classList.contains("open")) {
-      closeInstallHelpSheet();
       return;
     }
     if (elements.filterSheet.classList.contains("open")) {
@@ -1386,17 +1388,17 @@ function renderDownloadGuide() {
   const guides = {
     android: {
       title: "Android APK",
-      text: "Download file APK dari GitHub Release, lalu buka file tersebut untuk install di Android.",
+      text: "Download file APK dari GitHub Release, lalu buka file tersebut untuk instalasi di Android.",
       action: "Download APK"
     },
     ios: {
-      title: "iOS Add to Home Screen",
-      text: "Buka di Safari → Share → Add to Home Screen.",
+      title: "iOS",
+      text: "Buka CatatKas melalui Safari, tekan tombol Share, lalu pilih Add to Home Screen.",
       action: ""
     },
     desktop: {
-      title: "Desktop PWA",
-      text: "Install melalui browser yang mendukung PWA.",
+      title: "Desktop",
+      text: "Buka CatatKas melalui browser yang mendukung PWA, lalu pilih Install App.",
       action: ""
     }
   };

@@ -326,17 +326,17 @@
               <span id="downloadAppVersion">v1.1.1</span>
             </div>
           </div>
-          <div class="download-segmented" role="tablist" aria-label="Pilihan platform download">
-            <button type="button" class="download-segment active" data-download-platform="android" role="tab" aria-selected="true">Android</button>
-            <button type="button" class="download-segment" data-download-platform="ios" role="tab" aria-selected="false">iOS</button>
-            <button type="button" class="download-segment" data-download-platform="desktop" role="tab" aria-selected="false">Desktop</button>
+          <div class="install-tabs" role="tablist" aria-label="Pilihan platform download">
+            <button type="button" class="install-tab active" data-download-platform="android" role="tab" aria-selected="true">Android</button>
+            <button type="button" class="install-tab" data-download-platform="ios" role="tab" aria-selected="false">iOS</button>
+            <button type="button" class="install-tab" data-download-platform="desktop" role="tab" aria-selected="false">Desktop</button>
           </div>
           <div class="download-guide-card" id="downloadGuideCard">
             <div>
               <strong id="downloadGuideTitle">Android APK</strong>
-              <p id="downloadGuideText">Download file APK dari GitHub Release, lalu buka file tersebut untuk install di Android.</p>
+              <p id="downloadGuideText">Download file APK dari GitHub Release, lalu buka file tersebut untuk instalasi di Android.</p>
             </div>
-            <button type="button" class="primary-button compact-action" id="downloadGuideAction">Download APK</button>
+            <button type="button" class="primary-button install-action-button compact-action" id="downloadGuideAction">Download APK</button>
           </div>
           <p class="helper-text" id="installHelperText">Pilih platform untuk melihat panduan instalasi yang sesuai.</p>
         </section>
@@ -380,27 +380,6 @@
       <div class="sheet-actions">
         <button type="button" class="ghost-button" id="resetFilterButton">Reset</button>
         <button type="button" class="primary-button" id="applyFilterButton">Terapkan</button>
-      </div>
-    </aside>
-
-    <div class="sheet-overlay" id="installHelpOverlay" hidden></div>
-    <aside class="bottom-sheet install-help-sheet" id="installHelpSheet" aria-hidden="true" aria-labelledby="installHelpTitle">
-      <div class="sheet-handle"></div>
-      <div class="sheet-header">
-        <div>
-          <p class="eyebrow">Bantuan</p>
-          <h2 id="installHelpTitle">Informasi Instalasi</h2>
-        </div>
-        <button type="button" class="close-sheet-button" id="closeInstallHelpSheet" aria-label="Tutup panduan">x</button>
-      </div>
-      <div class="sheet-content install-help-content">
-        <div class="download-guide-card install-help-card">
-          <div>
-            <strong>Download Aplikasi</strong>
-            <p>Untuk menginstal atau memperbarui aplikasi CatatKas, buka halaman Settings, lalu masuk ke bagian Download Aplikasi.</p>
-          </div>
-          <button type="button" class="primary-button" id="openSettingsFromHelp">Buka Settings</button>
-        </div>
       </div>
     </aside>
 

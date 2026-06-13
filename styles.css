@@ -350,10 +350,6 @@ select:focus {
   transform: translateY(0);
 }
 
-.install-help-sheet {
-  max-height: min(360px, 64vh);
-}
-
 .sheet-handle {
   justify-self: center;
   width: 42px;
@@ -387,11 +383,6 @@ select:focus {
   gap: 16px;
   overflow: auto;
   padding: 6px 16px 12px;
-}
-
-.install-help-content {
-  gap: 12px;
-  padding-bottom: max(18px, env(safe-area-inset-bottom));
 }
 
 .filter-group {
@@ -905,7 +896,7 @@ select:focus {
   font-size: 0.8rem;
 }
 
-.download-segmented {
+.install-tabs {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 6px;
@@ -915,7 +906,7 @@ select:focus {
   background: #f7faf9;
 }
 
-.download-segment {
+.install-tab {
   width: 100%;
   min-height: 38px;
   border: 1px solid var(--line);
@@ -930,21 +921,21 @@ select:focus {
   transition: background 140ms ease, border-color 140ms ease, color 140ms ease, box-shadow 140ms ease, transform 140ms ease;
 }
 
-.download-segment:hover,
-.download-segment:focus-visible {
+.install-tab:hover,
+.install-tab:focus-visible {
   outline: none;
   background: var(--soft);
   border-color: rgba(15, 118, 110, 0.28);
 }
 
-.download-segment.active {
+.install-tab.active {
   border-color: var(--brand);
   background: var(--brand);
   color: #fff;
   box-shadow: 0 8px 16px rgba(15, 118, 110, 0.16);
 }
 
-.download-segment:active {
+.install-tab:active {
   transform: translateY(1px);
 }
 
@@ -973,13 +964,9 @@ select:focus {
   line-height: 1.42;
 }
 
-.install-help-card {
-  background: linear-gradient(180deg, #fbfdfc 0%, #f7fbfa 100%);
-}
-
-.install-help-card .primary-button {
-  width: 100%;
-  min-height: 42px;
+.install-action-button {
+  width: auto;
+  min-width: 100px;
 }
 
 .primary-button.installed-state {
