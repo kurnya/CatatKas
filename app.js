@@ -220,6 +220,7 @@ function bindEvents() {
   elements.preferenceDateFormat.addEventListener("change", savePreferencesFromForm);
   elements.preferenceTheme.addEventListener("change", savePreferencesFromForm);
   elements.preferenceDefaultPayment.addEventListener("change", savePreferencesFromForm);
+  elements.amount.addEventListener("input", formatAmountInput);
   elements.checkUpdateButton.addEventListener("click", () => checkForAppUpdate(true));
   elements.updateNowButton.addEventListener("click", applyAppUpdate);
 
@@ -394,8 +395,9 @@ function fillSelect(select, values) {
 
 function saveTransaction(event) {
   event.preventDefault();
-  const amount = Number(elements.amount.value);
-  if (!elements.amount.value) {
+  const rawAmount = elements.amount.value.replace(/\./g, "");
+  const amount = Number(rawAmount);
+  if (!rawAmount) {
     showToast("Nominal wajib diisi.", "warning");
     return;
   }
@@ -1181,7 +1183,7 @@ function editTransaction(id) {
   syncMainCategory(normalizeMainCategory(transaction.type || transaction.category, state.types));
   setSubCategoryValue(transaction.subCategory);
   setSelectValue(elements.paymentMethod, state.paymentMethods, transaction.paymentMethod);
-  elements.amount.value = transaction.amount;
+  elements.amount.value = formatRupiahInput(String(transaction.amount));
   elements.note.value = transaction.note || "";
   elements.submitButton.textContent = "Update Transaksi";
   elements.cancelEditButton.hidden = false;
@@ -2085,6 +2087,25 @@ function addDays(date, days) {
   const next = new Date(`${date}T00:00:00`);
   next.setDate(next.getDate() + days);
   return next.toISOString().slice(0, 10);
+}
+
+function formatRupiahInput(value) {
+  const digits = value.replace(/\D/g, "");
+  if (!digits) return "";
+  return new Intl.NumberFormat("id-ID").format(Number(digits));
+}
+
+function formatAmountInput(event) {
+  const input = event.target;
+  const cursorPos = input.selectionStart;
+  const oldValue = input.value;
+  const formatted = formatRupiahInput(oldValue);
+  input.value = formatted;
+
+  // Restore cursor position accounting for added/removed separators
+  const diff = formatted.length - oldValue.length;
+  const newPos = Math.max(0, cursorPos + diff);
+  input.setSelectionRange(newPos, newPos);
 }
 
 function rupiah(value) {
