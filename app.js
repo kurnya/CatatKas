@@ -13,13 +13,15 @@ const UPDATE_KEYS = {
   cacheRefreshPending: "catatkas_cache_refresh_pending"
 };
 
+const LOCKED_TYPES = ["Pemasukan", "Pengeluaran", "Pemindahan Saldo"];
+
 const defaults = {
-  types: ["Pemasukan", "Pengeluaran", "Transfer"],
-  categories: ["Pemasukan", "Pengeluaran", "Transfer"],
+  types: [...LOCKED_TYPES],
+  categories: [...LOCKED_TYPES],
   subCategories: {
     Pemasukan: ["Gaji", "Bonus", "Pendapatan Usaha", "Hadiah", "Lainnya"],
     Pengeluaran: ["Makan & Minum", "Transportasi", "Belanja", "Tagihan", "Kesehatan", "Pendidikan", "Hiburan", "Kebutuhan Rumah", "Lainnya"],
-    Transfer: ["Antar Rekening", "Tarik Tunai", "Top Up E-Wallet", "Pindah Saldo", "Lainnya"]
+    "Pemindahan Saldo": ["Antar Rekening", "Tarik Tunai", "Top Up E-Wallet", "Pindah Saldo", "Lainnya"]
   },
   paymentMethods: ["CASH", "BCA", "SEABANK", "DANA", "OVO", "GoPay", "ShopeePay", "Kartu Kredit"],
   transactions: []
@@ -84,6 +86,7 @@ const elements = {
   activeMonthLabel: document.querySelector("#activeMonthLabel"),
   incomeTotal: document.querySelector("#incomeTotal"),
   expenseTotal: document.querySelector("#expenseTotal"),
+  transferTotal: document.querySelector("#transferTotal"),
   balanceTotal: document.querySelector("#balanceTotal"),
   recentList: document.querySelector("#recentList"),
   transactionList: document.querySelector("#transactionList"),
@@ -318,16 +321,19 @@ function loadState() {
   try {
     const parsed = JSON.parse(raw);
     const migrated = { ...structuredClone(defaults), ...parsed };
-    migrated.types = normalizeTypes(parsed.types);
-    migrated.categories = structuredClone(migrated.types);
+    migrated.types = [...LOCKED_TYPES];
+    migrated.categories = [...LOCKED_TYPES];
     migrated.subCategories = normalizeSubCategories(parsed.subCategories, migrated.types);
-    migrated.transactions = (migrated.transactions || []).map((transaction) => ({
-      ...transaction,
-      type: normalizeTransactionType(transaction, migrated.types),
-      category: normalizeTransactionType(transaction, migrated.types),
-      createdAt: transaction.createdAt || transaction.updatedAt || new Date().toISOString(),
-      updatedAt: transaction.updatedAt || transaction.createdAt || new Date().toISOString()
-    }));
+    migrated.transactions = (migrated.transactions || []).map((transaction) => {
+      let type = migrateTransactionType(transaction, migrated.subCategories);
+      return {
+        ...transaction,
+        type,
+        category: type,
+        createdAt: transaction.createdAt || transaction.updatedAt || new Date().toISOString(),
+        updatedAt: transaction.updatedAt || transaction.createdAt || new Date().toISOString()
+      };
+    });
     return migrated;
   } catch {
     return structuredClone(defaults);
@@ -369,8 +375,8 @@ function navigate(page) {
 }
 
 function renderAll() {
-  fillSelect(elements.type, state.types);
-  fillSelect(elements.category, state.types);
+  fillSelect(elements.type, LOCKED_TYPES);
+  fillSelect(elements.category, LOCKED_TYPES);
   renderSubCategoryOptions(elements.type.value);
   fillSelect(elements.paymentMethod, state.paymentMethods);
   ensureActiveFiltersStillExist();
@@ -461,6 +467,7 @@ function renderHome() {
 
   elements.incomeTotal.textContent = rupiah(totals.income);
   elements.expenseTotal.textContent = rupiah(totals.expense);
+  elements.transferTotal.textContent = rupiah(totals.transfer);
   elements.balanceTotal.textContent = rupiah(cumulativeBalance);
   renderTransactionCards(elements.recentList, getSortedTransactions(monthTransactions).slice(0, 5), false);
 }
@@ -482,7 +489,7 @@ function renderFilterSummary() {
 }
 
 function renderFilterChips() {
-  renderChipGroup(elements.filterCategoryChips, ["Semua", ...state.types], draftFilters.category, "category");
+  renderChipGroup(elements.filterCategoryChips, ["Semua", ...LOCKED_TYPES], draftFilters.category, "category");
   renderChipGroup(elements.filterPaymentChips, ["Semua", ...state.paymentMethods], draftFilters.payment, "payment");
 }
 
@@ -861,7 +868,7 @@ function applyDraftFilters() {
 }
 
 function ensureActiveFiltersStillExist() {
-  if (activeFilters.category !== "Semua" && !state.types.includes(activeFilters.category)) {
+  if (activeFilters.category !== "Semua" && !LOCKED_TYPES.includes(activeFilters.category)) {
     activeFilters.category = "Semua";
   }
   if (activeFilters.payment !== "Semua" && !state.paymentMethods.includes(activeFilters.payment)) {
@@ -948,9 +955,22 @@ function renderChart(categoryTotals) {
 }
 
 function renderMasterData() {
-  renderMasterList(elements.categoryList, "categories");
+  renderLockedCategoryList();
   renderSubCategoryMasterList();
   renderMasterList(elements.paymentMethodList, "paymentMethods");
+}
+
+function renderLockedCategoryList() {
+  elements.categoryList.innerHTML = "";
+  LOCKED_TYPES.forEach((name) => {
+    const item = document.createElement("article");
+    item.className = "master-item";
+    item.innerHTML = `
+      <span class="master-name">${escapeHtml(name)}</span>
+      <span class="locked-badge">Terkunci</span>
+    `;
+    elements.categoryList.appendChild(item);
+  });
 }
 
 function renderMasterList(target, key) {
@@ -971,7 +991,7 @@ function renderMasterList(target, key) {
 
 function renderSubCategoryMasterList() {
   elements.subCategoryList.innerHTML = "";
-  state.types.forEach((type) => {
+  LOCKED_TYPES.forEach((type) => {
     const group = document.createElement("section");
     group.className = "master-group";
     group.innerHTML = `<h3>Subkategori ${escapeHtml(type)}</h3><div class="master-list-inner"></div>`;
@@ -997,10 +1017,8 @@ async function addMasterItem(key) {
     addSubCategoryItem();
     return;
   }
-  if (key === "categories") {
-    addMainCategory();
-    return;
-  }
+  showToast("Kategori utama sudah ditentukan dan tidak bisa diubah.", "info");
+  return;
   const result = await showFormModal({
     title: "Tambah Metode Pembayaran",
     message: "Masukkan nama metode pembayaran baru.",
@@ -1017,7 +1035,10 @@ async function addMasterItem(key) {
 }
 
 async function editMasterItem(key, index) {
-  if (key === "categories") return editMainCategory(index);
+  if (key === "categories") {
+    showToast("Kategori utama sudah ditentukan dan tidak bisa diubah.", "info");
+    return;
+  }
   const oldName = state[key][index];
   const result = await showFormModal({
     title: "Edit Metode Pembayaran",
@@ -1035,7 +1056,10 @@ async function editMasterItem(key, index) {
 }
 
 async function deleteMasterItem(key, index) {
-  if (key === "categories") return deleteMainCategory(index);
+  if (key === "categories") {
+    showToast("Kategori utama sudah ditentukan dan tidak bisa diubah.", "info");
+    return;
+  }
   const name = state[key][index];
   const used = isMasterItemUsed(key, name);
   const confirmed = await showConfirmModal({
@@ -1059,7 +1083,7 @@ async function addSubCategoryItem() {
     confirmText: "Tambah",
     type: "info",
     fields: [
-      { name: "type", label: "Kategori utama", type: "select", options: state.types, value: state.types[0], required: true },
+      { name: "type", label: "Kategori utama", type: "select", options: LOCKED_TYPES, value: LOCKED_TYPES[0], required: true },
       { name: "name", label: "Nama subkategori", required: true, placeholder: "Contoh: Internet" }
     ],
     validate: ({ type, name }) => validateSubCategoryName(type, name)
@@ -1107,80 +1131,13 @@ async function deleteSubCategoryItem(type, index) {
   showToast("Master data berhasil dihapus.", "success");
 }
 
-async function addMainCategory() {
-  const result = await showFormModal({
-    title: "Tambah Kategori",
-    message: "Masukkan nama kategori utama baru.",
-    confirmText: "Tambah",
-    type: "info",
-    fields: [{ name: "name", label: "Nama kategori", required: true, placeholder: "Contoh: Investasi" }],
-    validate: ({ name }) => validateMasterName("types", name)
-  });
-  if (!result) return;
-  const clean = result.name.trim();
-  state.types.push(clean);
-  state.categories = structuredClone(state.types);
-  state.subCategories[clean] = ["Lainnya"];
-  persist();
-  renderAll();
-  showToast("Master data berhasil ditambahkan.", "success");
-}
-
-async function editMainCategory(index) {
-  const oldName = state.types[index];
-  const result = await showFormModal({
-    title: "Edit Kategori",
-    message: "Perubahan nama kategori akan diterapkan pada transaksi terkait.",
-    confirmText: "Simpan",
-    type: "info",
-    fields: [{ name: "name", label: "Nama kategori", value: oldName, required: true }],
-    validate: ({ name }) => validateMasterName("types", name, oldName)
-  });
-  if (!result) return;
-  const clean = result.name.trim();
-  state.types[index] = clean;
-  state.categories = structuredClone(state.types);
-  state.subCategories[clean] = state.subCategories[oldName] || ["Lainnya"];
-  if (clean !== oldName) delete state.subCategories[oldName];
-  state.transactions = state.transactions.map((item) => {
-    if (item.type !== oldName && item.category !== oldName) return item;
-    return { ...item, type: clean, category: clean };
-  });
-  persist();
-  renderAll();
-  showToast("Master data berhasil diedit.", "success");
-}
-
-async function deleteMainCategory(index) {
-  const name = state.types[index];
-  if (state.types.length <= 1) {
-    showToast("Minimal harus ada satu kategori utama.", "warning");
-    return;
-  }
-  const used = isMasterItemUsed("types", name);
-  const confirmed = await showConfirmModal({
-    title: "Hapus Kategori?",
-    message: used ? `Kategori "${name}" sedang dipakai transaksi lama. Transaksi tetap disimpan, tetapi kategori ini akan dihapus dari master data.` : `Kategori "${name}" akan dihapus dari master data.`,
-    confirmText: "Hapus",
-    cancelText: "Batal",
-    type: "danger"
-  });
-  if (!confirmed) return;
-  state.types.splice(index, 1);
-  state.categories = structuredClone(state.types);
-  delete state.subCategories[name];
-  persist();
-  renderAll();
-  showToast("Master data berhasil dihapus.", "success");
-}
-
 function editTransaction(id) {
   const transaction = state.transactions.find((item) => item.id === id);
   if (!transaction) return;
 
   elements.id.value = transaction.id;
   elements.date.value = transaction.date;
-  syncMainCategory(normalizeMainCategory(transaction.type || transaction.category, state.types));
+  syncMainCategory(normalizeMainCategory(transaction.type || transaction.category, LOCKED_TYPES));
   setSubCategoryValue(transaction.subCategory);
   setSelectValue(elements.paymentMethod, state.paymentMethods, transaction.paymentMethod);
   elements.amount.value = formatRupiahInput(String(transaction.amount));
@@ -1211,9 +1168,9 @@ function resetForm() {
   elements.date.value = today();
   elements.submitButton.textContent = "Simpan Transaksi";
   elements.cancelEditButton.hidden = true;
-  fillSelect(elements.type, state.types);
-  fillSelect(elements.category, state.types);
-  syncMainCategory(elements.type.value || state.types[0]);
+  fillSelect(elements.type, LOCKED_TYPES);
+  fillSelect(elements.category, LOCKED_TYPES);
+  syncMainCategory(elements.type.value || LOCKED_TYPES[0]);
   fillSelect(elements.paymentMethod, state.paymentMethods);
   if (state.paymentMethods.includes(preferences.defaultPayment)) {
     elements.paymentMethod.value = preferences.defaultPayment;
@@ -1229,8 +1186,8 @@ async function resetMasterData() {
     type: "danger"
   });
   if (!confirmed) return;
-  state.types = structuredClone(defaults.types);
-  state.categories = structuredClone(defaults.categories);
+  state.types = [...LOCKED_TYPES];
+  state.categories = [...LOCKED_TYPES];
   state.subCategories = structuredClone(defaults.subCategories);
   state.paymentMethods = structuredClone(defaults.paymentMethods);
   persist();
@@ -1348,14 +1305,14 @@ async function importBackup(event) {
   reader.onload = () => {
     try {
       const backup = JSON.parse(reader.result);
-      state.types = normalizeTypes(backup.types);
-      state.categories = structuredClone(state.types);
-      state.subCategories = normalizeSubCategories(backup.subCategories, state.types);
+      state.types = [...LOCKED_TYPES];
+      state.categories = [...LOCKED_TYPES];
+      state.subCategories = normalizeSubCategories(backup.subCategories, LOCKED_TYPES);
       state.paymentMethods = Array.isArray(backup.paymentMethods) ? backup.paymentMethods : defaults.paymentMethods;
       state.transactions = Array.isArray(backup.transactions) ? backup.transactions.map((item) => ({
         ...item,
-        type: normalizeTransactionType(item, state.types),
-        category: normalizeTransactionType(item, state.types)
+        type: migrateTransactionType(item, state.subCategories),
+        category: migrateTransactionType(item, state.subCategories)
       })) : [];
       persist();
       renderAll();
@@ -1870,7 +1827,7 @@ function getTotals(transactions) {
   return {
     income: transactions.filter((item) => item.type === "Pemasukan").reduce((sum, item) => sum + Number(item.amount || 0), 0),
     expense: transactions.filter((item) => item.type === "Pengeluaran").reduce((sum, item) => sum + Number(item.amount || 0), 0),
-    transfer: transactions.filter((item) => item.type === "Transfer").reduce((sum, item) => sum + Number(item.amount || 0), 0)
+    transfer: transactions.filter((item) => item.type === "Pemindahan Saldo").reduce((sum, item) => sum + Number(item.amount || 0), 0)
   };
 }
 
@@ -1908,9 +1865,7 @@ function setSelectValue(select, list, value) {
 }
 
 function syncMainCategory(type) {
-  const mainCategory = normalizeMainCategory(type, state.types);
-  if (!state.types.includes(mainCategory)) state.types.push(mainCategory);
-  state.categories = structuredClone(state.types);
+  const mainCategory = normalizeMainCategory(type, LOCKED_TYPES);
   if (!state.subCategories[mainCategory]) state.subCategories[mainCategory] = ["Lainnya"];
   elements.type.value = mainCategory;
   elements.category.value = mainCategory;
@@ -1918,7 +1873,7 @@ function syncMainCategory(type) {
 }
 
 function renderSubCategoryOptions(type, resetInvalid = false) {
-  const mainCategory = normalizeMainCategory(type || elements.type.value, state.types);
+  const mainCategory = normalizeMainCategory(type || elements.type.value, LOCKED_TYPES);
   const current = elements.subCategory.value;
   const list = getSubCategoriesForType(mainCategory);
   fillSelect(elements.subCategory, list);
@@ -1939,7 +1894,7 @@ function setSubCategoryValue(value) {
 }
 
 function getSubCategoriesForType(type) {
-  const mainCategory = normalizeMainCategory(type, state.types);
+  const mainCategory = normalizeMainCategory(type, LOCKED_TYPES);
   if (!state.subCategories[mainCategory]) state.subCategories[mainCategory] = ["Lainnya"];
   return state.subCategories[mainCategory];
 }
@@ -1957,7 +1912,7 @@ function validateMasterName(key, name, currentName = "") {
 }
 
 function validateSubCategoryName(type, name, currentName = "") {
-  if (!state.types.includes(type)) return "Kategori utama tidak valid.";
+  if (!LOCKED_TYPES.includes(type)) return "Kategori utama tidak valid.";
   const clean = String(name || "").trim();
   if (!clean) return "Nama item wajib diisi.";
   const list = getSubCategoriesForType(type);
@@ -1985,42 +1940,48 @@ function normalizeTypes(types) {
   return clean.length ? clean : fallback;
 }
 
-function normalizeMainCategory(value, types = defaults.types) {
+function normalizeMainCategory(value, types = LOCKED_TYPES) {
   const clean = String(value || "").trim();
-  const allowedTypes = Array.isArray(types) && types.length ? types : defaults.types;
+  const allowedTypes = LOCKED_TYPES;
   if (allowedTypes.includes(clean)) return clean;
-  if (defaults.types.includes(clean)) return clean;
-  return allowedTypes[0] || defaults.types[0];
+  return allowedTypes[0];
 }
 
-function normalizeTransactionType(transaction, types = defaults.types) {
-  if (types.includes(transaction.type)) return transaction.type;
-  if (types.includes(transaction.category)) return transaction.category;
-  const inferred = inferSubCategoryType(transaction.subCategory || transaction.category);
-  return normalizeMainCategory(inferred, types);
-}
-
-function normalizeSubCategories(input, types = defaults.types) {
-  if (input && !Array.isArray(input) && typeof input === "object") {
-    const result = {};
-    normalizeTypes(types).forEach((type) => {
-      const values = Array.isArray(input[type]) ? input[type] : defaults.subCategories[type] || ["Lainnya"];
-      result[type] = uniqueClean(values);
-    });
-    return result;
+function migrateTransactionType(transaction, subCategories) {
+  const type = String(transaction.type || transaction.category || "").trim();
+  if (LOCKED_TYPES.includes(type)) return type;
+  // Migrate Transfer or unknown types based on sub-category inference
+  const sub = String(transaction.subCategory || "").trim();
+  if (subCategories) {
+    for (const [locked, list] of Object.entries(subCategories)) {
+      if (list.includes(sub)) return locked;
+    }
   }
+  // Default fallback for Transfer-related items
+  if (["Tarik Tunai", "Top Up E-Wallet"].includes(sub)) return "Pemindahan Saldo";
+  if (["Antar Rekening", "Pindah Saldo"].includes(sub)) return "Pemindahan Saldo";
+  return inferSubCategoryType(sub || type);
+}
 
-  const result = structuredClone(defaults.subCategories);
-  normalizeTypes(types).forEach((type) => {
-    if (!result[type]) result[type] = ["Lainnya"];
+function normalizeSubCategories(input, types = LOCKED_TYPES) {
+  const result = {};
+  LOCKED_TYPES.forEach((type) => {
+    const values = input && Array.isArray(input[type]) ? input[type] : defaults.subCategories[type] || ["Lainnya"];
+    result[type] = uniqueClean(values);
   });
-  if (Array.isArray(input)) {
-    input.forEach((name) => {
-      const clean = String(name || "").trim();
-      if (!clean) return;
-      const type = inferSubCategoryType(clean);
-      if (!result[type].includes(clean)) result[type].push(clean);
-    });
+  // Migrate any orphan sub-categories from removed types (e.g. Transfer)
+  if (input && typeof input === "object" && !Array.isArray(input)) {
+    for (const [oldType, list] of Object.entries(input)) {
+      if (LOCKED_TYPES.includes(oldType)) continue;
+      if (Array.isArray(list)) {
+        list.forEach((name) => {
+          const clean = String(name || "").trim();
+          if (!clean) return;
+          const target = inferSubCategoryType(clean);
+          if (!result[target].includes(clean)) result[target].push(clean);
+        });
+      }
+    }
   }
   return result;
 }
@@ -2031,13 +1992,13 @@ function inferSubCategoryType(name) {
     if (list.includes(value)) return type;
   }
   if (["Gaji", "Bonus", "Pendapatan Usaha", "Hadiah"].includes(value)) return "Pemasukan";
-  if (["Pindah Akun", "Antar Rekening", "Tarik Tunai", "Top Up E-Wallet", "Pindah Saldo"].includes(value)) return "Transfer";
+  if (["Pindah Akun", "Antar Rekening", "Tarik Tunai", "Top Up E-Wallet", "Pindah Saldo"].includes(value)) return "Pemindahan Saldo";
   return "Pengeluaran";
 }
 
 function findSubCategoryType(name) {
   const value = String(name || "").trim();
-  return state.types.find((type) => getSubCategoriesForType(type).includes(value));
+  return LOCKED_TYPES.find((type) => getSubCategoriesForType(type).includes(value));
 }
 
 function uniqueClean(values) {
@@ -2065,13 +2026,14 @@ function downloadFile(filename, content, type) {
 }
 
 function signedAmount(transaction) {
-  const prefix = transaction.type === "Pengeluaran" ? "-" : transaction.type === "Pemasukan" ? "+" : "";
-  return `${prefix}${rupiah(transaction.amount)}`;
+  if (transaction.type === "Pemasukan") return `+${rupiah(transaction.amount)}`;
+  if (transaction.type === "Pengeluaran") return `-${rupiah(transaction.amount)}`;
+  return rupiah(transaction.amount);
 }
 
 function amountClass(type) {
   if (type === "Pengeluaran") return "amount-expense";
-  if (type === "Transfer") return "amount-transfer";
+  if (type === "Pemindahan Saldo") return "amount-transfer";
   return "amount-income";
 }
 

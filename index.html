@@ -49,6 +49,10 @@
             <span>Total Pengeluaran</span>
             <strong class="expense-text" id="expenseTotal">Rp0</strong>
           </article>
+          <article class="summary-card">
+            <span>Pemindahan Saldo</span>
+            <strong class="transfer-text" id="transferTotal">Rp0</strong>
+          </article>
           <article class="summary-card balance-card">
             <span>Saldo</span>
             <strong id="balanceTotal">Rp0</strong>
@@ -159,12 +163,12 @@
         </section>
       </section>
 
-      <section class="page" id="masterPage" data-title="Master Data">
+      <section class="page" id="masterPage" data-title="Data Master">
         <div class="master-section panel">
           <div class="section-title">
             <h2>Kategori</h2>
-            <button class="small-button" data-add-master="categories">Tambah</button>
           </div>
+          <p class="helper-text">Kategori utama: Pemasukan, Pengeluaran, dan Pemindahan Saldo (tetap/tidak bisa diubah).</p>
           <div class="master-list" id="categoryList"></div>
         </div>
 
@@ -399,8 +403,8 @@
       <button class="nav-item active" data-nav="home"><span class="nav-icon">⌂</span><span>Beranda</span></button>
       <button class="nav-item" data-nav="transactions"><span class="nav-icon">↕</span><span>Transaksi</span></button>
       <button class="nav-item" data-nav="stats"><span class="nav-icon">▥</span><span>Statistik</span></button>
-      <button class="nav-item" data-nav="master"><span class="nav-icon">☷</span><span>Master</span></button>
-      <button class="nav-item" data-nav="settings"><span class="nav-icon">⚙</span><span>Setting</span></button>
+      <button class="nav-item" data-nav="master"><span class="nav-icon">☷</span><span>Data Master</span></button>
+      <button class="nav-item" data-nav="settings"><span class="nav-icon">⚙</span><span>Pengaturan</span></button>
     </nav>
 
     <script src="app.js"></script>
