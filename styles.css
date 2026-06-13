@@ -350,6 +350,10 @@ select:focus {
   transform: translateY(0);
 }
 
+.install-help-sheet {
+  max-height: min(520px, 78vh);
+}
+
 .sheet-handle {
   justify-self: center;
   width: 42px;
@@ -383,6 +387,11 @@ select:focus {
   gap: 16px;
   overflow: auto;
   padding: 6px 16px 12px;
+}
+
+.install-help-content {
+  gap: 12px;
+  padding-bottom: max(18px, env(safe-area-inset-bottom));
 }
 
 .filter-group {
@@ -962,6 +971,16 @@ select:focus {
   color: var(--muted);
   font-size: 0.8rem;
   line-height: 1.42;
+}
+
+.install-help-card {
+  background: linear-gradient(180deg, #fbfdfc 0%, #f7fbfa 100%);
+}
+
+.install-help-card .primary-button {
+  justify-self: start;
+  width: auto;
+  min-width: 124px;
 }
 
 .install-action-button {

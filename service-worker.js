@@ -2,16 +2,17 @@ const APP_VERSION = "1.1.1";
 const CACHE_PREFIX = "catatkas-cache-";
 const CACHE_NAME = `${CACHE_PREFIX}v${APP_VERSION}`;
 
-// Absolute paths for GitHub Pages deployment at /CatatKas/
+// Auto-detect base path from service worker scope
+const SCOPE_PATH = self.registration ? new URL(self.registration.scope).pathname : "/";
 const APP_SHELL = [
-  "/CatatKas/",
-  "/CatatKas/index.html",
-  "/CatatKas/styles.css",
-  "/CatatKas/app.js",
-  "/CatatKas/manifest.json",
-  "/CatatKas/icons/icon.svg",
-  "/CatatKas/icons/icon-192.png",
-  "/CatatKas/icons/icon-512.png"
+  SCOPE_PATH,
+  SCOPE_PATH + "index.html",
+  SCOPE_PATH + "styles.css",
+  SCOPE_PATH + "app.js",
+  SCOPE_PATH + "manifest.json",
+  SCOPE_PATH + "icons/icon.svg",
+  SCOPE_PATH + "icons/icon-192.png",
+  SCOPE_PATH + "icons/icon-512.png"
 ];
 
 self.addEventListener("install", (event) => {
@@ -61,11 +62,11 @@ self.addEventListener("fetch", (event) => {
         .then((response) => {
           const copy = response.clone();
           caches.open(CACHE_NAME).then((cache) =>
-            cache.put("/CatatKas/index.html", copy)
+            cache.put(SCOPE_PATH + "index.html", copy)
           );
           return response;
         })
-        .catch(() => caches.match("/CatatKas/index.html"))
+        .catch(() => caches.match(SCOPE_PATH + "index.html"))
     );
     return;
   }
