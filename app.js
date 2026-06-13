@@ -56,6 +56,10 @@ const elements = {
   pages: document.querySelectorAll(".page"),
   navItems: document.querySelectorAll(".nav-item"),
   installButton: document.querySelector("#installButton"),
+  installBadge: document.querySelector("#installBadge"),
+  settingsInstallButton: document.querySelector("#settingsInstallButton"),
+  downloadAppVersion: document.querySelector("#downloadAppVersion"),
+  installHelperText: document.querySelector("#installHelperText"),
   toastContainerTop: document.querySelector("#toastContainerTop"),
   appModalOverlay: document.querySelector("#appModalOverlay"),
   appModal: document.querySelector("#appModal"),
@@ -233,7 +237,13 @@ function bindEvents() {
     button.addEventListener("click", () => addMasterItem(button.dataset.addMaster));
   });
 
-  elements.installButton.addEventListener("click", installApp);
+  // Header install button navigates to settings page
+  elements.installButton.addEventListener("click", () => {
+    navigate("settings");
+  });
+
+  // Settings page install button triggers the actual install
+  elements.settingsInstallButton.addEventListener("click", installApp);
   elements.appModalOverlay.addEventListener("click", () => closeModal(false));
   elements.appModalClose.addEventListener("click", () => closeModal(false));
   elements.appModalCancel.addEventListener("click", () => closeModal(false));
@@ -252,10 +262,14 @@ function bindEvents() {
       // Double-check: hide button if running inside TWA/APK
       if (isRunningStandalone()) {
         elements.installButton.hidden = true;
+        if (elements.installBadge) elements.installBadge.style.display = "none";
+        updateSettingsInstallButton();
         return;
       }
       deferredPrompt = event;
       elements.installButton.hidden = false;
+      if (elements.installBadge) elements.installBadge.style.display = "flex";
+      updateSettingsInstallButton();
       console.log("[PWA Debug] deferredPrompt saved, button visible");
 
       // Auto-hide after 8 seconds if user doesn't tap it.
@@ -264,6 +278,7 @@ function bindEvents() {
       installAutoHideTimer = setTimeout(() => {
         if (!elements.installButton.hidden) {
           elements.installButton.hidden = true;
+          if (elements.installBadge) elements.installBadge.style.display = "none";
           localStorage.setItem("catatkas_app_installed", "1");
           console.log("[PWA Debug] Install button auto-hidden (TWA detected by inactivity)");
         }
@@ -275,8 +290,10 @@ function bindEvents() {
       window.setTimeout(() => {
         if (isRunningStandalone()) {
           elements.installButton.hidden = true;
+          if (elements.installBadge) elements.installBadge.style.display = "none";
           deferredPrompt = null;
           clearTimeout(installAutoHideTimer);
+          updateSettingsInstallButton();
           console.log("[PWA Debug] Standalone detected after load, hiding install button");
         }
       }, 500);
@@ -287,7 +304,9 @@ function bindEvents() {
   window.matchMedia("(display-mode: standalone)").addEventListener("change", (e) => {
     if (e.matches) {
       elements.installButton.hidden = true;
+      if (elements.installBadge) elements.installBadge.style.display = "none";
       deferredPrompt = null;
+      updateSettingsInstallButton();
     }
   });
 
@@ -295,6 +314,8 @@ function bindEvents() {
     console.log("[PWA Debug] appinstalled event fired - installation successful");
     deferredPrompt = null;
     elements.installButton.hidden = true;
+    if (elements.installBadge) elements.installBadge.style.display = "none";
+    updateSettingsInstallButton();
     localStorage.setItem("catatkas_app_installed", "1");
     closeModal(false);
     showToast("Aplikasi berhasil diinstall", "success");
@@ -1176,6 +1197,8 @@ function renderOfflineStatus() {
 
 function renderPreferences() {
   elements.appVersionLabel.textContent = APP_VERSION;
+  if (elements.downloadAppVersion) elements.downloadAppVersion.textContent = `v${APP_VERSION}`;
+  updateSettingsInstallButton();
   renderUpdateSettings();
   renderOfflineStatus();
   elements.preferenceCurrency.value = preferences.currency;
@@ -1270,7 +1293,9 @@ async function installApp() {
   if (isRunningStandalone()) {
     console.log("[PWA Debug] Already in standalone mode");
     elements.installButton.hidden = true;
+    if (elements.installBadge) elements.installBadge.style.display = "none";
     localStorage.setItem("catatkas_app_installed", "1");
+    updateSettingsInstallButton();
     return;
   }
 
@@ -1296,6 +1321,8 @@ async function installApp() {
       console.log("[PWA Debug] User dismissed install");
       localStorage.setItem("catatkas_app_installed", "1");
       elements.installButton.hidden = true;
+      if (elements.installBadge) elements.installBadge.style.display = "none";
+      updateSettingsInstallButton();
     }
     
     deferredPrompt = null;
@@ -1304,6 +1331,8 @@ async function installApp() {
     // Prompt failed — likely a TWA context
     localStorage.setItem("catatkas_app_installed", "1");
     elements.installButton.hidden = true;
+    if (elements.installBadge) elements.installBadge.style.display = "none";
+    updateSettingsInstallButton();
   }
 }
 
@@ -1324,6 +1353,32 @@ function isIOSDevice() {
   const iOSPlatform = /iPad|iPhone|iPod/.test(platform);
   const iPadOS = platform === "MacIntel" && window.navigator.maxTouchPoints > 1;
   return iOSPlatform || iPadOS || /iPad|iPhone|iPod/.test(userAgent);
+}
+
+function updateSettingsInstallButton() {
+  if (!elements.settingsInstallButton) return;
+  if (isRunningStandalone()) {
+    elements.settingsInstallButton.textContent = "Aplikasi Sudah Terinstall";
+    elements.settingsInstallButton.disabled = true;
+    elements.settingsInstallButton.classList.add("installed-state");
+    if (elements.installHelperText) {
+      elements.installHelperText.textContent = "CatatKas sudah terinstall di perangkat Anda.";
+    }
+  } else if (deferredPrompt) {
+    elements.settingsInstallButton.textContent = "Download Aplikasi";
+    elements.settingsInstallButton.disabled = false;
+    elements.settingsInstallButton.classList.remove("installed-state");
+    if (elements.installHelperText) {
+      elements.installHelperText.textContent = "Tekan tombol di atas untuk menginstall CatatKas di perangkat Anda.";
+    }
+  } else {
+    elements.settingsInstallButton.textContent = "Download Aplikasi";
+    elements.settingsInstallButton.disabled = false;
+    elements.settingsInstallButton.classList.remove("installed-state");
+    if (elements.installHelperText) {
+      elements.installHelperText.textContent = "Buka halaman ini di Chrome untuk menginstall aplikasi.";
+    }
+  }
 }
 
 

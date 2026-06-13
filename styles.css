@@ -78,6 +78,7 @@ h2 {
 }
 
 .install-info-btn {
+  position: relative;
   display: grid;
   place-items: center;
   width: 36px;
@@ -89,6 +90,25 @@ h2 {
   cursor: pointer;
   flex-shrink: 0;
   transition: background 140ms ease, color 140ms ease;
+}
+
+.install-badge {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--expense, #dc2626);
+  color: #fff;
+  font-size: 0.65rem;
+  font-weight: 900;
+  line-height: 1;
+  box-shadow: 0 2px 6px rgba(220, 38, 38, 0.45);
+  pointer-events: none;
 }
 
 .install-info-btn:hover,
@@ -838,6 +858,61 @@ select:focus {
 
 .update-actions {
   grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+/* Download app section */
+.download-card {
+  border-color: var(--brand);
+  border-width: 1.5px;
+}
+
+.download-info-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: #fbfdfc;
+}
+
+.download-app-icon {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 14px;
+  background: var(--soft);
+  overflow: hidden;
+}
+
+.download-app-icon img {
+  display: block;
+  width: 48px;
+  height: 48px;
+  object-fit: cover;
+}
+
+.download-info-row div {
+  display: grid;
+  gap: 3px;
+}
+
+.download-info-row strong {
+  font-size: 0.95rem;
+  color: var(--text);
+}
+
+.download-info-row span {
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.primary-button.installed-state {
+  background: var(--muted);
+  cursor: default;
+  opacity: 0.7;
 }
 
 .about-list div {

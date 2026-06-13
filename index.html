@@ -27,6 +27,7 @@
           <line x1="12" y1="7" x2="12" y2="13"/>
           <circle cx="12" cy="16.5" r="0.5" fill="currentColor" stroke="none"/>
         </svg>
+        <span class="install-badge" id="installBadge">!</span>
       </button>
     </header>
 
@@ -310,6 +311,26 @@
             <button type="button" class="ghost-button compact-action" id="checkUpdateButton">Cek Update</button>
             <button type="button" class="primary-button compact-action" id="updateNowButton" hidden>Update Sekarang</button>
           </div>
+        </section>
+
+        <section class="settings-card panel download-card">
+          <div class="settings-heading">
+            <h2>Download Aplikasi</h2>
+            <p class="helper-text">Install CatatKas sebagai aplikasi di perangkat Anda agar bisa digunakan offline dan diakses lebih cepat dari layar utama.</p>
+          </div>
+          <div class="download-info-row">
+            <div class="download-app-icon">
+              <img src="icons/icon-192.png" alt="CatatKas" width="48" height="48">
+            </div>
+            <div>
+              <strong>CatatKas</strong>
+              <span id="downloadAppVersion">v1.1.1</span>
+            </div>
+          </div>
+          <div class="settings-actions">
+            <button type="button" class="primary-button" id="settingsInstallButton">Download Aplikasi</button>
+          </div>
+          <p class="helper-text" id="installHelperText">Setelah download, buka file APK untuk menginstall di Android.</p>
         </section>
 
         <section class="settings-card panel about-card">
