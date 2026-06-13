@@ -252,7 +252,7 @@ function bindEvents() {
 
   // Header help button opens installation guidance.
   elements.installButton.addEventListener("click", () => {
-    openInstallHelpSheet();
+    showToast("Untuk Install Aplikasi CatatKas silahkan menuju halaman seting dan ke bagian download", "info", 4000);
   });
   elements.installHelpOverlay.addEventListener("click", closeInstallHelpSheet);
   elements.closeInstallHelpSheet.addEventListener("click", closeInstallHelpSheet);
@@ -1393,8 +1393,8 @@ function renderDownloadGuide() {
     },
     desktop: {
       title: "Desktop",
-      text: "Buka CatatKas melalui browser yang mendukung PWA, lalu pilih Install App.",
-      action: ""
+      text: "Install CatatKas sebagai aplikasi desktop agar bisa diakses langsung dari komputer Anda.",
+      action: "Install"
     }
   };
 
