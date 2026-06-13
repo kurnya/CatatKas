@@ -7,6 +7,7 @@ const SCOPE_PATH = self.registration ? new URL(self.registration.scope).pathname
 const APP_SHELL = [
   SCOPE_PATH,
   SCOPE_PATH + "index.html",
+  SCOPE_PATH + "privacy-policy.html",
   SCOPE_PATH + "styles.css",
   SCOPE_PATH + "app.js",
   SCOPE_PATH + "manifest.json",

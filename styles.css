@@ -986,6 +986,19 @@ select:focus {
   border-bottom: 1px solid var(--line);
 }
 
+.privacy-link {
+  display: inline-block;
+  margin-top: 8px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--brand-dark);
+  text-decoration: none;
+}
+
+.privacy-link:hover {
+  text-decoration: underline;
+}
+
 .offline-status-row {
   display: flex;
   align-items: center;
@@ -1412,6 +1425,15 @@ body.theme-dark .small-button:hover {
 
 body.theme-dark .text-button {
   color: var(--brand);
+}
+
+body.theme-dark .privacy-link {
+  color: var(--brand);
+}
+
+body.theme-dark .privacy-section {
+  background: var(--panel);
+  border: 1px solid var(--line);
 }
 
 body.theme-dark .danger-button {
