@@ -110,7 +110,6 @@ const elements = {
   submitButton: document.querySelector("#submitButton"),
   cancelEditButton: document.querySelector("#cancelEditButton"),
   addTransactionButton: document.querySelector("#addTransactionButton"),
-  statsIncome: document.querySelector("#statsIncome"),
   statsExpense: document.querySelector("#statsExpense"),
   topExpenseCategory: document.querySelector("#topExpenseCategory"),
   dailyAverage: document.querySelector("#dailyAverage"),
@@ -134,7 +133,9 @@ const elements = {
   checkUpdateButton: document.querySelector("#checkUpdateButton"),
   updateNowButton: document.querySelector("#updateNowButton"),
   offlineStatusLabel: document.querySelector("#offlineStatusLabel"),
-  offlineStatusText: document.querySelector("#offlineStatusText")
+  offlineStatusText: document.querySelector("#offlineStatusText"),
+  downloadAppSection: document.querySelector("#downloadAppSection"),
+  updateCard: document.querySelector(".update-card")
 };
 
 init();
@@ -542,7 +543,7 @@ function showHelpModal() {
     title: "Refresh Fitur Baru",
     text: "Buka Settings bagian Update Aplikasi, lalu tekan Cek Update untuk memuat fitur terbaru tanpa menghapus data lokal.",
     buttonText: "Buka Update",
-    onClick: () => openSettingsSection(document.querySelector(".update-card"))
+    onClick: () => openSettingsSection(elements.updateCard)
   });
 
   content.append(downloadCard, updateCard);
@@ -919,13 +920,18 @@ function renderStats() {
   const expenseTransactions = monthTransactions.filter((item) => item.type === "Pengeluaran");
   const categoryTotals = groupTotals(expenseTransactions, "subCategory");
   const top = Object.entries(categoryTotals).sort((a, b) => b[1] - a[1])[0];
-  const daysElapsed = Math.max(1, getDaysElapsedInSelectedMonth());
 
-  elements.statsIncome.textContent = rupiah(totals.income);
+  // Average expenses over last 30 days from today
+  const todayStr = today();
+  const thirtyDaysAgo = addDays(todayStr, -30);
+  const last30DaysExpense = state.transactions
+    .filter((item) => item.type === "Pengeluaran" && item.date >= thirtyDaysAgo && item.date <= todayStr)
+    .reduce((sum, item) => sum + Number(item.amount || 0), 0);
+
   elements.statsExpense.textContent = rupiah(totals.expense);
   elements.statsBalance.textContent = rupiah(totals.income - totals.expense);
   elements.topExpenseCategory.textContent = top ? `${top[0]} - ${rupiah(top[1])}` : "-";
-  elements.dailyAverage.textContent = rupiah(totals.expense / daysElapsed);
+  elements.dailyAverage.textContent = rupiah(Math.round(last30DaysExpense / 30));
   renderChart(categoryTotals);
 }
 
