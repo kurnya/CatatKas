@@ -2089,11 +2089,14 @@ function rupiah(value) {
 }
 
 function formatDate(value) {
-  return new Intl.DateTimeFormat("id-ID", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric"
-  }).format(new Date(`${value}T00:00:00`));
+  const d = new Date(`${value}T00:00:00`);
+  const dd = String(d.getDate()).padStart(2, "0");
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const yyyy = d.getFullYear();
+  const fmt = preferences.dateFormat || "DD/MM/YYYY";
+  if (fmt === "MM/DD/YYYY") return `${mm}/${dd}/${yyyy}`;
+  if (fmt === "YYYY/MM/DD") return `${yyyy}/${mm}/${dd}`;
+  return `${dd}/${mm}/${yyyy}`;
 }
 
 function formatMonth(value) {

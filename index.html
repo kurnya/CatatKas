@@ -101,15 +101,6 @@
             <select id="paymentMethod" required></select>
           </label>
 
-          <div class="quick-row" aria-label="Pilihan cepat">
-            <button type="button" class="chip" data-quick-payment="CASH">CASH</button>
-            <button type="button" class="chip" data-quick-payment="BCA">BCA</button>
-            <button type="button" class="chip" data-quick-payment="DANA">DANA</button>
-            <button type="button" class="chip" data-quick-category="Gaji">Gaji</button>
-            <button type="button" class="chip" data-quick-category="Makan & Minum">Makan & Minum</button>
-            <button type="button" class="chip" data-quick-category="Transportasi">Transportasi</button>
-          </div>
-
           <label>
             Catatan opsional
             <input type="text" id="note" maxlength="120" placeholder="Contoh: sarapan">
@@ -269,6 +260,8 @@
               Format tanggal
               <select id="preferenceDateFormat">
                 <option value="DD/MM/YYYY">DD/MM/YYYY</option>
+                <option value="MM/DD/YYYY">MM/DD/YYYY</option>
+                <option value="YYYY/MM/DD">YYYY/MM/DD</option>
               </select>
             </label>
             <label>
