@@ -414,8 +414,8 @@ select:focus {
   min-height: 36px;
   border: 1px solid var(--line);
   border-radius: 999px;
-  background: #f4f6f5;
-  color: var(--text);
+  background: var(--soft);
+  color: var(--muted);
   padding: 7px 12px;
   cursor: pointer;
   font-weight: 850;
@@ -1415,6 +1415,11 @@ body.theme-dark .modal-close-button {
   background: var(--panel);
   border-color: var(--line);
   color: var(--muted);
+}
+
+body.theme-dark .fab {
+  background: #0f766e;
+  box-shadow: 0 12px 24px rgba(15, 118, 110, 0.4);
 }
 
 body.theme-dark .install-tab.active,
