@@ -1,6 +1,6 @@
 const STORAGE_KEY = "catatan_keuangan_pwa_v1";
 const PREFERENCES_KEY = "catatan_keuangan_preferences_v1";
-const APP_VERSION = "1.0.5";
+const APP_VERSION = "1.1.0";
 const IS_DEV = location.hostname === "localhost" || location.hostname === "127.0.0.1";
 const UPDATE_KEYS = {
   currentVersion: "catatkas_current_version",
@@ -31,10 +31,8 @@ const pageMap = {
   settings: "settingsPage"
 };
 
-// Detect if on GitHub Pages or localhost
-const isGitHubPages = window.location.hostname.includes('github.io');
-const repoName = 'CatatKas';
-const BASE_URL = isGitHubPages ? `/${repoName}/` : '/';
+// PWA base path (GitHub Pages: /CatatKas/, localhost: /)
+const PWA_BASE = "/CatatKas/";
 
 const state = loadState();
 const preferences = loadPreferences();
@@ -121,7 +119,9 @@ const elements = {
   updateAppName: document.querySelector("#updateAppName"),
   updateStatusText: document.querySelector("#updateStatusText"),
   checkUpdateButton: document.querySelector("#checkUpdateButton"),
-  updateNowButton: document.querySelector("#updateNowButton")
+  updateNowButton: document.querySelector("#updateNowButton"),
+  offlineStatusLabel: document.querySelector("#offlineStatusLabel"),
+  offlineStatusText: document.querySelector("#offlineStatusText")
 };
 
 init();
@@ -157,8 +157,13 @@ function init() {
   bindEvents();
   showUpdateSuccessToastIfNeeded();
   renderAll();
+  renderOfflineStatus();
   navigate("home");
   registerServiceWorker();
+
+  // Listen for online/offline changes
+  window.addEventListener("online", renderOfflineStatus);
+  window.addEventListener("offline", renderOfflineStatus);
 }
 
 function bindEvents() {
@@ -1154,9 +1159,20 @@ async function deleteAllTransactions() {
   showToast("Semua transaksi berhasil dihapus.", "success");
 }
 
+function renderOfflineStatus() {
+  if (!elements.offlineStatusLabel || !elements.offlineStatusText) return;
+  const isOnline = navigator.onLine;
+  elements.offlineStatusLabel.className = "offline-status-badge " + (isOnline ? "online" : "offline");
+  elements.offlineStatusLabel.textContent = isOnline ? "● Online" : "● Offline";
+  elements.offlineStatusText.textContent = isOnline
+    ? "Terhubung ke internet. Update aplikasi tersedia."
+    : "Tidak ada koneksi. CatatKas tetap bisa digunakan offline.";
+}
+
 function renderPreferences() {
   elements.appVersionLabel.textContent = APP_VERSION;
   renderUpdateSettings();
+  renderOfflineStatus();
   elements.preferenceCurrency.value = preferences.currency;
   elements.preferenceDateFormat.value = preferences.dateFormat;
   elements.preferenceTheme.value = preferences.theme;
@@ -1320,7 +1336,7 @@ function registerServiceWorker() {
     window.location.reload();
   });
 
-  navigator.serviceWorker.register(BASE_URL + "service-worker.js", { scope: BASE_URL })
+  navigator.serviceWorker.register(PWA_BASE + "service-worker.js", { scope: PWA_BASE })
     .then((registration) => {
       serviceWorkerRegistration = registration;
       if (registration.waiting) {

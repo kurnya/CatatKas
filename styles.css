@@ -840,6 +840,34 @@ select:focus {
   border-bottom: 1px solid var(--line);
 }
 
+.offline-status-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 700;
+  font-size: 0.9rem;
+  margin-bottom: 4px;
+}
+
+.offline-status-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 800;
+  line-height: 1.4;
+}
+
+.offline-status-badge.online {
+  background: #ecfdf5;
+  color: #059669;
+}
+
+.offline-status-badge.offline {
+  background: #fef2f2;
+  color: #dc2626;
+}
+
 .transaction-list {
   display: grid;
   gap: 8px;

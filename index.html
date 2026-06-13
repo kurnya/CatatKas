@@ -192,6 +192,18 @@
       <section class="page" id="settingsPage" data-title="Pengaturan">
         <section class="settings-card panel">
           <div class="settings-heading">
+            <h2>Mode Offline</h2>
+            <p class="helper-text">CatatKas dapat digunakan offline setelah aplikasi pernah dibuka saat online.</p>
+          </div>
+          <div class="offline-status-row">
+            <span>Status:</span>
+            <span class="offline-status-badge online" id="offlineStatusLabel">● Online</span>
+          </div>
+          <p class="helper-text" id="offlineStatusText">Terhubung ke internet. Update aplikasi tersedia.</p>
+        </section>
+
+        <section class="settings-card panel">
+          <div class="settings-heading">
             <h2>Data & Backup</h2>
             <p class="helper-text">Simpan cadangan data atau unduh riwayat transaksi.</p>
           </div>
@@ -285,7 +297,7 @@
             <p class="helper-text">Update hanya memperbarui file aplikasi. Data transaksi tetap tersimpan di perangkat Anda.</p>
           </div>
           <div class="update-info">
-            <strong id="updateAppName">CatatKas v1.0.5</strong>
+            <strong id="updateAppName">CatatKas v1.1.0</strong>
             <span>Status: <b id="updateStatusText">Menggunakan versi terbaru</b></span>
           </div>
           <div class="settings-actions update-actions">
@@ -300,7 +312,7 @@
           </div>
           <div class="about-list">
             <div><span>Nama aplikasi</span><strong>CatatKas</strong></div>
-            <div><span>Versi aplikasi saat ini</span><strong id="appVersionLabel">1.0.5</strong></div>
+            <div><span>Versi aplikasi saat ini</span><strong id="appVersionLabel">1.1.0</strong></div>
             <p class="helper-text">Data disimpan secara lokal di perangkat menggunakan localStorage.</p>
           </div>
         </section>

@@ -1,18 +1,21 @@
-const APP_VERSION = "1.0.5";
+const APP_VERSION = "1.1.0";
 const CACHE_PREFIX = "catatkas-cache-";
 const CACHE_NAME = `${CACHE_PREFIX}v${APP_VERSION}`;
+
+// Absolute paths for GitHub Pages deployment at /CatatKas/
 const APP_SHELL = [
-  "./",
-  "./index.html",
-  "./styles.css",
-  "./app.js",
-  "./manifest.json",
-  "./icons/icon.svg",
-  "./icons/icon-192.png",
-  "./icons/icon-512.png"
+  "/CatatKas/",
+  "/CatatKas/index.html",
+  "/CatatKas/styles.css",
+  "/CatatKas/app.js",
+  "/CatatKas/manifest.json",
+  "/CatatKas/icons/icon.svg",
+  "/CatatKas/icons/icon-192.png",
+  "/CatatKas/icons/icon-512.png"
 ];
 
 self.addEventListener("install", (event) => {
+  self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) =>
       cache.addAll(APP_SHELL.map((url) => new Request(url, { cache: "reload" })))
@@ -51,19 +54,23 @@ self.addEventListener("fetch", (event) => {
   const requestUrl = new URL(event.request.url);
   if (requestUrl.origin !== self.location.origin) return;
 
+  // Navigation requests: network-first with cache fallback
   if (event.request.mode === "navigate") {
     event.respondWith(
       fetch(event.request)
         .then((response) => {
           const copy = response.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put("./index.html", copy));
+          caches.open(CACHE_NAME).then((cache) =>
+            cache.put("/CatatKas/index.html", copy)
+          );
           return response;
         })
-        .catch(() => caches.match("./index.html"))
+        .catch(() => caches.match("/CatatKas/index.html"))
     );
     return;
   }
 
+  // All other assets: cache-first with network fallback
   event.respondWith(
     caches.match(event.request).then((cached) =>
       cached || fetch(event.request)
