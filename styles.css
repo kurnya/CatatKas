@@ -354,10 +354,6 @@ select:focus {
   transform: translateY(0);
 }
 
-.install-help-sheet {
-  max-height: min(520px, 78vh);
-}
-
 .sheet-handle {
   justify-self: center;
   width: 42px;
@@ -391,11 +387,6 @@ select:focus {
   gap: 16px;
   overflow: auto;
   padding: 6px 16px 12px;
-}
-
-.install-help-content {
-  gap: 12px;
-  padding-bottom: max(18px, env(safe-area-inset-bottom));
 }
 
 .filter-group {
@@ -977,16 +968,6 @@ select:focus {
   line-height: 1.42;
 }
 
-.install-help-card {
-  background: linear-gradient(180deg, #fbfdfc 0%, #f7fbfa 100%);
-}
-
-.install-help-card .primary-button {
-  justify-self: start;
-  width: auto;
-  min-width: 124px;
-}
-
 .install-action-button {
   width: auto;
   min-width: 100px;
@@ -1276,6 +1257,134 @@ select:focus {
 
 .back-button {
   justify-self: start;
+}
+
+.help-guide-list {
+  display: grid;
+  gap: 10px;
+}
+
+.help-guide-card {
+  display: grid;
+  gap: 11px;
+  padding: 12px;
+  border: 1px solid rgba(15, 118, 110, 0.16);
+  border-radius: 14px;
+  background: #fbfdfc;
+}
+
+.help-guide-card div {
+  display: grid;
+  gap: 5px;
+}
+
+.help-guide-card strong {
+  color: var(--text);
+  font-size: 0.92rem;
+}
+
+.help-guide-card p {
+  color: var(--muted);
+  font-size: 0.8rem;
+  line-height: 1.42;
+}
+
+.help-guide-action {
+  width: 100%;
+  min-height: 40px;
+}
+
+body.theme-dark {
+  color-scheme: dark;
+  --bg: #071f1c;
+  --panel: #0d2a26;
+  --text: #edf8f5;
+  --muted: #9db2ad;
+  --line: #21423c;
+  --brand: #2dd4bf;
+  --brand-dark: #7ddbd0;
+  --soft: #123b35;
+  --income: #34d399;
+  --expense: #f87171;
+  --warning: #fbbf24;
+  --info: #22d3ee;
+  --transfer: #a78bfa;
+  --shadow: 0 10px 24px rgba(0, 0, 0, 0.34);
+  --shadow-soft: 0 6px 18px rgba(0, 0, 0, 0.26);
+}
+
+body.theme-dark .app-header {
+  background: rgba(7, 31, 28, 0.92);
+}
+
+body.theme-dark .install-info-btn,
+body.theme-dark .month-row,
+body.theme-dark .summary-card,
+body.theme-dark .stat-card,
+body.theme-dark .panel,
+body.theme-dark .app-modal,
+body.theme-dark .bottom-sheet,
+body.theme-dark .bottom-nav {
+  background: var(--panel);
+}
+
+body.theme-dark input,
+body.theme-dark select,
+body.theme-dark textarea {
+  background: #09231f;
+  border-color: var(--line);
+  color: var(--text);
+}
+
+body.theme-dark .ghost-button,
+body.theme-dark .file-button,
+body.theme-dark .small-button,
+body.theme-dark .settings-row,
+body.theme-dark .update-info,
+body.theme-dark .download-info-row,
+body.theme-dark .download-guide-card,
+body.theme-dark .help-guide-card,
+body.theme-dark .transaction-card,
+body.theme-dark .master-item,
+body.theme-dark .install-tab {
+  background: #0f302b;
+  border-color: var(--line);
+  color: var(--text);
+}
+
+body.theme-dark .install-tabs,
+body.theme-dark .transaction-meta span,
+body.theme-dark .close-sheet-button,
+body.theme-dark .modal-close-button {
+  background: #0a241f;
+  border-color: var(--line);
+  color: var(--text);
+}
+
+body.theme-dark .install-tab.active,
+body.theme-dark .primary-button {
+  background: #0f766e;
+  border-color: #0f766e;
+  color: #fff;
+}
+
+body.theme-dark .danger-button {
+  background: rgba(248, 113, 113, 0.12);
+  border-color: rgba(248, 113, 113, 0.28);
+}
+
+body.theme-dark .empty-state {
+  border-color: var(--line);
+  color: var(--muted);
+}
+
+body.theme-dark .bar-track {
+  background: #14342f;
+}
+
+body.theme-dark .sheet-overlay,
+body.theme-dark .modal-overlay {
+  background: rgba(0, 0, 0, 0.58);
 }
 
 @media (min-width: 680px) {

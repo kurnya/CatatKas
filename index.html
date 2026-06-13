@@ -21,7 +21,7 @@
         <p class="eyebrow">CatatKas</p>
         <h1 id="pageTitle">Beranda</h1>
       </div>
-      <button class="install-info-btn" id="installButton" aria-label="Petunjuk instalasi CatatKas" title="Untuk Install Aplikasi CatatKas silahkan menuju halaman seting dan ke bagian download">
+      <button class="install-info-btn" id="installButton" aria-label="Bantuan CatatKas" title="Bantuan aplikasi">
         <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <circle cx="12" cy="12" r="10"/>
           <path d="M9.1 9a3 3 0 1 1 5.7 1.35c-.7 1.05-1.8 1.35-2.35 2.15"/>
@@ -380,32 +380,6 @@
       <div class="sheet-actions">
         <button type="button" class="ghost-button" id="resetFilterButton">Reset</button>
         <button type="button" class="primary-button" id="applyFilterButton">Terapkan</button>
-      </div>
-    </aside>
-
-    <div class="sheet-overlay" id="installHelpOverlay" hidden></div>
-    <aside class="bottom-sheet install-help-sheet" id="installHelpSheet" aria-hidden="true" aria-labelledby="installHelpTitle">
-      <div class="sheet-handle"></div>
-      <div class="sheet-header">
-        <div>
-          <p class="eyebrow">Bantuan</p>
-          <h2 id="installHelpTitle">Panduan Instalasi CatatKas</h2>
-        </div>
-        <button type="button" class="close-sheet-button" id="closeInstallHelpSheet" aria-label="Tutup panduan">x</button>
-      </div>
-      <div class="sheet-content install-help-content">
-        <div class="install-tabs" role="tablist" aria-label="Pilih platform panduan instalasi">
-          <button type="button" class="install-tab active" data-install-help-platform="android" role="tab" aria-selected="true">Android</button>
-          <button type="button" class="install-tab" data-install-help-platform="ios" role="tab" aria-selected="false">iOS</button>
-          <button type="button" class="install-tab" data-install-help-platform="desktop" role="tab" aria-selected="false">Desktop</button>
-        </div>
-        <div class="download-guide-card install-help-card">
-          <div>
-            <strong id="installHelpGuideTitle">Android</strong>
-            <p id="installHelpGuideText">Install aplikasi dari browser jika tersedia. Jika diperlukan, unduh APK dari GitHub Release lalu pasang di perangkat.</p>
-          </div>
-          <button type="button" class="primary-button install-action-button compact-action" id="installHelpAction">Download APK</button>
-        </div>
       </div>
     </aside>
 

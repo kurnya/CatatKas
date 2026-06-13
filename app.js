@@ -54,20 +54,13 @@ let activeFilters = {
 };
 let draftFilters = { ...activeFilters };
 let activeDownloadPlatform = "android";
-let activeInstallHelpPlatform = "android";
 
 const elements = {
   pageTitle: document.querySelector("#pageTitle"),
   pages: document.querySelectorAll(".page"),
   navItems: document.querySelectorAll(".nav-item"),
   installButton: document.querySelector("#installButton"),
-  installHelpOverlay: document.querySelector("#installHelpOverlay"),
-  installHelpSheet: document.querySelector("#installHelpSheet"),
-  closeInstallHelpSheet: document.querySelector("#closeInstallHelpSheet"),
-  installHelpPlatformButtons: document.querySelectorAll("[data-install-help-platform]"),
-  installHelpGuideTitle: document.querySelector("#installHelpGuideTitle"),
-  installHelpGuideText: document.querySelector("#installHelpGuideText"),
-  installHelpAction: document.querySelector("#installHelpAction"),
+  themeMeta: document.querySelector("meta[name='theme-color']"),
   downloadPlatformButtons: document.querySelectorAll("[data-download-platform]"),
   downloadGuideTitle: document.querySelector("#downloadGuideTitle"),
   downloadGuideText: document.querySelector("#downloadGuideText"),
@@ -172,6 +165,7 @@ function init() {
   // Log initial debug info
   logInstallDebugInfo();
   
+  applyThemePreference();
   bindEvents();
   showUpdateSuccessToastIfNeeded();
   renderAll();
@@ -182,6 +176,7 @@ function init() {
   // Listen for online/offline changes
   window.addEventListener("online", renderOfflineStatus);
   window.addEventListener("offline", renderOfflineStatus);
+  window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", applyThemePreference);
 }
 
 function bindEvents() {
@@ -251,16 +246,10 @@ function bindEvents() {
     button.addEventListener("click", () => addMasterItem(button.dataset.addMaster));
   });
 
-  // Header help button opens installation guidance.
+  // Header help button opens app guidance.
   elements.installButton.addEventListener("click", () => {
-    showToast("Untuk Install Aplikasi CatatKas silahkan menuju halaman seting dan ke bagian download", "info", 4000);
+    showHelpModal();
   });
-  elements.installHelpOverlay.addEventListener("click", closeInstallHelpSheet);
-  elements.closeInstallHelpSheet.addEventListener("click", closeInstallHelpSheet);
-  elements.installHelpPlatformButtons.forEach((button) => {
-    button.addEventListener("click", () => selectInstallHelpPlatform(button.dataset.installHelpPlatform));
-  });
-  elements.installHelpAction.addEventListener("click", () => handleAppDownload(activeInstallHelpPlatform));
 
   elements.downloadPlatformButtons.forEach((button) => {
     button.addEventListener("click", () => selectDownloadPlatform(button.dataset.downloadPlatform));
@@ -519,35 +508,79 @@ function closeFilterSheet() {
   updateSheetBodyLock();
 }
 
-function openInstallHelpSheet(platform = activeInstallHelpPlatform) {
-  selectInstallHelpPlatform(platform);
-  elements.installHelpOverlay.hidden = false;
-  elements.installHelpSheet.classList.add("open");
-  elements.installHelpSheet.setAttribute("aria-hidden", "false");
-  updateSheetBodyLock();
-}
-
-function closeInstallHelpSheet() {
-  elements.installHelpSheet.classList.remove("open");
-  elements.installHelpSheet.setAttribute("aria-hidden", "true");
-  elements.installHelpOverlay.hidden = true;
-  updateSheetBodyLock();
-}
-
 function updateSheetBodyLock() {
   const filterOpen = elements.filterSheet.classList.contains("open");
-  const installHelpOpen = elements.installHelpSheet.classList.contains("open");
-  document.body.classList.toggle("sheet-open", filterOpen || installHelpOpen);
+  document.body.classList.toggle("sheet-open", filterOpen);
+}
+
+function showHelpModal() {
+  const content = document.createElement("div");
+  content.className = "help-guide-list";
+
+  const downloadCard = createHelpGuideCard({
+    title: "Download Aplikasi",
+    text: "Buka halaman Settings, lalu masuk ke bagian Download Aplikasi untuk memilih Android, iOS, atau Desktop.",
+    buttonText: "Buka Download",
+    onClick: () => openSettingsSection(elements.downloadAppSection)
+  });
+
+  const updateCard = createHelpGuideCard({
+    title: "Refresh Fitur Baru",
+    text: "Buka Settings bagian Update Aplikasi, lalu tekan Cek Update untuk memuat fitur terbaru tanpa menghapus data lokal.",
+    buttonText: "Buka Update",
+    onClick: () => openSettingsSection(document.querySelector(".update-card"))
+  });
+
+  content.append(downloadCard, updateCard);
+
+  showConfirmModal({
+    title: "Bantuan CatatKas",
+    message: "Pilih panduan yang Anda butuhkan.",
+    confirmText: "Mengerti",
+    cancelText: "Tutup",
+    type: "info",
+    icon: "i",
+    content
+  });
+}
+
+function createHelpGuideCard({ title, text, buttonText, onClick }) {
+  const card = document.createElement("div");
+  card.className = "help-guide-card";
+
+  const body = document.createElement("div");
+  const heading = document.createElement("strong");
+  heading.textContent = title;
+  const copy = document.createElement("p");
+  copy.textContent = text;
+  body.append(heading, copy);
+
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "primary-button help-guide-action";
+  button.textContent = buttonText;
+  button.addEventListener("click", () => {
+    closeModal(false);
+    onClick();
+  });
+
+  card.append(body, button);
+  return card;
+}
+
+function openSettingsSection(section) {
+  navigate("settings");
+  window.setTimeout(() => {
+    if (section && typeof section.scrollIntoView === "function") {
+      section.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, 220);
 }
 
 function handleGlobalKeydown(event) {
   if (event.key === "Escape") {
     if (!elements.appModalOverlay.hidden) {
       closeModal(false);
-      return;
-    }
-    if (elements.installHelpSheet.classList.contains("open")) {
-      closeInstallHelpSheet();
       return;
     }
     if (elements.filterSheet.classList.contains("open")) {
@@ -1221,12 +1254,28 @@ function renderOfflineStatus() {
     : "Tidak ada koneksi. CatatKas tetap bisa digunakan offline.";
 }
 
+function getResolvedTheme() {
+  if (preferences.theme === "dark") return "dark";
+  if (preferences.theme === "light") return "light";
+  return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+}
+
+function applyThemePreference() {
+  const darkMode = getResolvedTheme() === "dark";
+  document.body.classList.toggle("theme-dark", darkMode);
+  document.body.classList.toggle("theme-light", !darkMode);
+  if (elements.themeMeta) {
+    elements.themeMeta.setAttribute("content", darkMode ? "#071f1c" : "#0f766e");
+  }
+}
+
 function renderPreferences() {
   elements.appVersionLabel.textContent = APP_VERSION;
   if (elements.downloadAppVersion) elements.downloadAppVersion.textContent = `v${APP_VERSION}`;
   updateSettingsInstallButton();
   renderUpdateSettings();
   renderOfflineStatus();
+  applyThemePreference();
   elements.preferenceCurrency.value = preferences.currency;
   elements.preferenceDateFormat.value = preferences.dateFormat;
   elements.preferenceTheme.value = preferences.theme;
@@ -1246,6 +1295,7 @@ function savePreferencesFromForm() {
   preferences.theme = elements.preferenceTheme.value;
   preferences.defaultPayment = elements.preferenceDefaultPayment.value;
   persistPreferences();
+  applyThemePreference();
   showToast("Preferensi berhasil disimpan.", "success", 2500);
 }
 
@@ -1412,47 +1462,6 @@ function renderDownloadGuide() {
   if (elements.downloadGuideAction) {
     elements.downloadGuideAction.hidden = !guide.action;
     elements.downloadGuideAction.textContent = guide.action || "";
-  }
-}
-
-function selectInstallHelpPlatform(platform) {
-  if (!["android", "ios", "desktop"].includes(platform)) return;
-  activeInstallHelpPlatform = platform;
-  renderInstallHelpGuide();
-}
-
-function renderInstallHelpGuide() {
-  const guides = {
-    android: {
-      title: "Android",
-      text: "Install aplikasi dari browser jika tersedia. Jika diperlukan, unduh APK dari GitHub Release lalu pasang di perangkat.",
-      action: "Download APK"
-    },
-    ios: {
-      title: "iOS",
-      text: "Buka CatatKas di Safari, tekan Share, lalu pilih Add to Home Screen.",
-      action: ""
-    },
-    desktop: {
-      title: "Desktop",
-      text: "Buka CatatKas di browser, lalu pilih menu Install App / Install CatatKas.",
-      action: ""
-    }
-  };
-
-  const guide = guides[activeInstallHelpPlatform] || guides.android;
-
-  elements.installHelpPlatformButtons.forEach((button) => {
-    const active = button.dataset.installHelpPlatform === activeInstallHelpPlatform;
-    button.classList.toggle("active", active);
-    button.setAttribute("aria-selected", String(active));
-  });
-
-  if (elements.installHelpGuideTitle) elements.installHelpGuideTitle.textContent = guide.title;
-  if (elements.installHelpGuideText) elements.installHelpGuideText.textContent = guide.text;
-  if (elements.installHelpAction) {
-    elements.installHelpAction.hidden = !guide.action;
-    elements.installHelpAction.textContent = guide.action || "";
   }
 }
 
