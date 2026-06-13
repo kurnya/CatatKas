@@ -924,21 +924,36 @@ select:focus {
 
 .download-dropdown summary.primary-button {
   position: relative;
-  padding-right: 36px;
+  min-height: 46px;
+  border-radius: 12px;
+  padding-right: 42px;
   cursor: pointer;
+  box-shadow: 0 8px 18px rgba(15, 118, 110, 0.16);
+  transition: background 140ms ease, box-shadow 140ms ease, transform 140ms ease;
+}
+
+.download-dropdown summary.primary-button:hover,
+.download-dropdown[open] summary.primary-button {
+  background: var(--brand-dark);
+  box-shadow: 0 10px 22px rgba(15, 118, 110, 0.2);
+}
+
+.download-dropdown summary.primary-button:active {
+  transform: translateY(1px);
 }
 
 .download-dropdown summary.primary-button::after {
   content: "";
   position: absolute;
   top: 50%;
-  right: 15px;
-  width: 8px;
-  height: 8px;
+  right: 17px;
+  width: 7px;
+  height: 7px;
   border-right: 2px solid currentColor;
   border-bottom: 2px solid currentColor;
   transform: translateY(-65%) rotate(45deg);
-  transition: transform 140ms ease;
+  opacity: 0.9;
+  transition: transform 160ms ease;
 }
 
 .download-dropdown[open] summary.primary-button::after {
@@ -948,28 +963,64 @@ select:focus {
 .download-options {
   position: absolute;
   z-index: 8;
-  top: calc(100% + 6px);
+  top: calc(100% + 8px);
   left: 0;
   right: 0;
   display: grid;
-  gap: 5px;
-  padding: 7px;
-  border: 1px solid var(--line);
-  border-radius: 14px;
-  background: var(--panel);
-  box-shadow: var(--shadow);
+  gap: 4px;
+  padding: 6px;
+  border: 1px solid rgba(15, 118, 110, 0.12);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.98);
+  box-shadow: 0 16px 34px rgba(16, 32, 28, 0.13);
+  overflow: hidden;
 }
 
 .download-options button {
+  display: grid;
+  grid-template-columns: 34px 1fr;
+  align-items: center;
+  gap: 10px;
   width: 100%;
   border: 0;
-  border-radius: 10px;
+  border-radius: 12px;
   background: transparent;
   color: var(--text);
-  padding: 10px 12px;
+  padding: 10px;
   cursor: pointer;
-  font-weight: 800;
   text-align: left;
+  transition: background 140ms ease, color 140ms ease, transform 140ms ease;
+}
+
+.download-options button span:not(.download-option-icon) {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.download-options button strong {
+  font-size: 0.86rem;
+  font-weight: 850;
+  line-height: 1.15;
+}
+
+.download-options button small {
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 650;
+  line-height: 1.25;
+}
+
+.download-option-icon {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: var(--soft);
+  color: var(--brand-dark);
+  font-size: 0.75rem;
+  font-weight: 900;
 }
 
 .download-options button:hover,
@@ -977,6 +1028,12 @@ select:focus {
   outline: none;
   background: var(--soft);
   color: var(--brand-dark);
+  transform: translateX(1px);
+}
+
+.download-options button:hover .download-option-icon,
+.download-options button:focus-visible .download-option-icon {
+  background: #fff;
 }
 
 .primary-button.installed-state {
@@ -1333,4 +1390,3 @@ select:focus {
     transform: translateY(-10px);
   }
 }
-

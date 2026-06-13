@@ -4,7 +4,6 @@ const APP_VERSION = "1.1.1";
 const IS_DEV = location.hostname === "localhost" || location.hostname === "127.0.0.1";
 const GITHUB_RELEASE_URL = "https://github.com/kurnya/CatatKas/releases/latest";
 const ANDROID_APK_DOWNLOAD_URL = `${GITHUB_RELEASE_URL}/download/catatkas-android.apk`;
-const IOS_DOWNLOAD_URL = GITHUB_RELEASE_URL;
 const UPDATE_KEYS = {
   currentVersion: "catatkas_current_version",
   availableVersion: "catatkas_update_available_version",
@@ -1352,8 +1351,7 @@ function handleAppDownload(platform) {
   }
 
   if (platform === "ios") {
-    window.location.href = IOS_DOWNLOAD_URL;
-    showToast("Membuka halaman GitHub Release untuk versi iOS.", "success");
+    showInstallGuideModal("ios");
     return;
   }
 
@@ -1391,13 +1389,13 @@ function updateSettingsInstallButton() {
     elements.settingsInstallButton.textContent = "Pilih Versi Download";
     elements.settingsInstallButton.classList.remove("installed-state");
     if (elements.installHelperText) {
-      elements.installHelperText.textContent = "Desktop memakai installer bawaan browser. APK Android dan iOS diarahkan ke GitHub Release.";
+      elements.installHelperText.textContent = "Desktop memakai installer bawaan browser. iOS memakai Share lalu Add to Home Screen.";
     }
   } else {
     elements.settingsInstallButton.textContent = "Pilih Versi Download";
     elements.settingsInstallButton.classList.remove("installed-state");
     if (elements.installHelperText) {
-      elements.installHelperText.textContent = "Pilih APK Android, iOS, atau Desktop sesuai perangkat Anda.";
+      elements.installHelperText.textContent = "Pilih APK Android, iOS Add to Home Screen, atau Desktop sesuai perangkat Anda.";
     }
   }
 }
@@ -1960,7 +1958,6 @@ function escapeHtml(value) {
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;");
 }
-
 
 
 

@@ -331,13 +331,31 @@
             <details class="download-dropdown" id="downloadMenu">
               <summary class="primary-button" id="settingsInstallButton">Download Aplikasi</summary>
               <div class="download-options" aria-label="Pilihan download aplikasi">
-                <button type="button" data-download-platform="android">APK Android</button>
-                <button type="button" data-download-platform="ios">iOS</button>
-                <button type="button" data-download-platform="desktop">Desktop</button>
+                <button type="button" data-download-platform="android">
+                  <span class="download-option-icon" aria-hidden="true">A</span>
+                  <span>
+                    <strong>APK Android</strong>
+                    <small>Download dari GitHub Release</small>
+                  </span>
+                </button>
+                <button type="button" data-download-platform="ios">
+                  <span class="download-option-icon" aria-hidden="true">i</span>
+                  <span>
+                    <strong>iOS</strong>
+                    <small>Share lalu Add to Home Screen</small>
+                  </span>
+                </button>
+                <button type="button" data-download-platform="desktop">
+                  <span class="download-option-icon" aria-hidden="true">D</span>
+                  <span>
+                    <strong>Desktop</strong>
+                    <small>Install lewat browser</small>
+                  </span>
+                </button>
               </div>
             </details>
           </div>
-          <p class="helper-text" id="installHelperText">Pilih APK Android, iOS, atau Desktop sesuai perangkat Anda.</p>
+          <p class="helper-text" id="installHelperText">Pilih APK Android, iOS Add to Home Screen, atau Desktop sesuai perangkat Anda.</p>
         </section>
 
         <section class="settings-card panel about-card">
@@ -411,5 +429,3 @@
     <script src="app.js"></script>
   </body>
 </html>
-
-
