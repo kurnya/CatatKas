@@ -86,7 +86,6 @@ const elements = {
   activeMonthLabel: document.querySelector("#activeMonthLabel"),
   incomeTotal: document.querySelector("#incomeTotal"),
   expenseTotal: document.querySelector("#expenseTotal"),
-  transferTotal: document.querySelector("#transferTotal"),
   balanceTotal: document.querySelector("#balanceTotal"),
   recentList: document.querySelector("#recentList"),
   transactionList: document.querySelector("#transactionList"),
@@ -467,7 +466,6 @@ function renderHome() {
 
   elements.incomeTotal.textContent = rupiah(totals.income);
   elements.expenseTotal.textContent = rupiah(totals.expense);
-  elements.transferTotal.textContent = rupiah(totals.transfer);
   elements.balanceTotal.textContent = rupiah(cumulativeBalance);
   renderTransactionCards(elements.recentList, getSortedTransactions(monthTransactions).slice(0, 5), false);
 }
