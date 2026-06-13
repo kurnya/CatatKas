@@ -1,0 +1,4 @@
+#Sat Jun 13 13:01:09 WIB 2026
+base.0=D\:\\01Projek\\DEV\\CatatKas\\app\\build\\intermediates\\dex\\release\\minifyReleaseWithR8\\classes.dex
+renamed.0=classes.dex
+path.0=classes.dex

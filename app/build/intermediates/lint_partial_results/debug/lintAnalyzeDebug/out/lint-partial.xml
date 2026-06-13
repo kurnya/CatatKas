@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<incidents format="6" by="lint 8.9.1" type="partial_results">
+    <map id="UnsafeIntentLaunch">
+            <map id="unprotected">
+                <entry
+                    name="LauncherActivity"
+                    boolean="true"/>
+            </map>
+    </map>
+    <map id="UnusedResources">
+        <location id="R.bool.enableSiteSettingsShortcut"
+            file="${:app*projectDir}/build.gradle"/>
+        <location id="R.color.shortcut_background"
+            file="${:app*debug*MAIN*sourceProvider*0*resDir*0}/values/colors.xml"
+            line="17"
+            column="12"
+            startOffset="654"
+            endLine="17"
+            endColumn="38"
+            endOffset="680"/>
+        <location id="R.drawable.shortcut_legacy_background"
+            file="${:app*debug*MAIN*sourceProvider*0*resDir*0}/drawable-anydpi/shortcut_legacy_background.xml"
+            line="16"
+            column="1"
+            startOffset="631"
+            endLine="25"
+            endColumn="9"
+            endOffset="1019"/>
+        <location id="R.raw.web_app_manifest"
+            file="${:app*debug*MAIN*sourceProvider*0*resDir*0}/raw/web_app_manifest.json"/>
+        <location id="R.string.fullScopeUrl"
+            file="${:app*projectDir}/build.gradle"/>
+        <entry
+            name="model"
+            string="bool[enableNotification(U),enableSiteSettingsShortcut(D)],color[colorPrimary(U),colorPrimaryDark(U),navigationColor(U),navigationColorDark(U),navigationDividerColor(U),navigationDividerColorDark(U),backgroundColor(U),shortcut_background(D)],drawable[splash(U),ic_notification_icon(U),shortcut_legacy_background(D),shortcut_legacy_background_1(E)],integer[splashScreenFadeOutDuration(U)],mipmap[ic_launcher(U),ic_maskable(U)],raw[web_app_manifest(D)],string[appName(U),assetStatements(U),webManifestUrl(U),generatorApp(U),launchUrl(U),launcherName(U),providerAuthority(U),fallbackType(U),orientation(U),hostName(U),fullScopeUrl(D)],xml[shortcuts(U),filepaths(U)];c^d^9,f^10;;;"/>
+    </map>
+
+</incidents>

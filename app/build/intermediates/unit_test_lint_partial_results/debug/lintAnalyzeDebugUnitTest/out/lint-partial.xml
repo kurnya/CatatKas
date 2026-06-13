@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<incidents format="6" by="lint 8.9.1" type="partial_results">
+    <map id="UnusedResources">
+        <location id="R.bool.enableNotification"
+            file="${:app*projectDir}/build.gradle"/>
+        <location id="R.bool.enableSiteSettingsShortcut"
+            file="${:app*projectDir}/build.gradle"/>
+        <location id="R.color.backgroundColor"
+            file="${:app*projectDir}/build.gradle"/>
+        <location id="R.color.colorPrimary"
+            file="${:app*projectDir}/build.gradle"/>
+        <location id="R.color.colorPrimaryDark"
+            file="${:app*projectDir}/build.gradle"/>
+        <location id="R.color.navigationColor"
+            file="${:app*projectDir}/build.gradle"/>
+        <location id="R.color.navigationColorDark"
+            file="${:app*projectDir}/build.gradle"/>
+        <location id="R.color.navigationDividerColor"
+            file="${:app*projectDir}/build.gradle"/>
+        <location id="R.color.navigationDividerColorDark"
+            file="${:app*projectDir}/build.gradle"/>
+        <location id="R.integer.splashScreenFadeOutDuration"
+            file="${:app*projectDir}/build.gradle"/>
+        <location id="R.string.appName"
+            file="${:app*projectDir}/build.gradle"/>
+        <location id="R.string.fallbackType"
+            file="${:app*projectDir}/build.gradle"/>
+        <location id="R.string.fullScopeUrl"
+            file="${:app*projectDir}/build.gradle"/>
+        <location id="R.string.generatorApp"
+            file="${:app*projectDir}/build.gradle"/>
+        <location id="R.string.hostName"
+            file="${:app*projectDir}/build.gradle"/>
+        <location id="R.string.launchUrl"
+            file="${:app*projectDir}/build.gradle"/>
+        <location id="R.string.launcherName"
+            file="${:app*projectDir}/build.gradle"/>
+        <location id="R.string.orientation"
+            file="${:app*projectDir}/build.gradle"/>
+        <location id="R.string.providerAuthority"
+            file="${:app*projectDir}/build.gradle"/>
+        <location id="R.string.webManifestUrl"
+            file="${:app*projectDir}/build.gradle"/>
+        <entry
+            name="model"
+            string="bool[enableNotification(D),enableSiteSettingsShortcut(D)],color[backgroundColor(D),colorPrimary(D),colorPrimaryDark(D),navigationColor(D),navigationColorDark(D),navigationDividerColor(D),navigationDividerColorDark(D)],integer[splashScreenFadeOutDuration(D)],string[appName(D),fallbackType(D),fullScopeUrl(D),generatorApp(D),hostName(D),launchUrl(D),launcherName(D),orientation(D),providerAuthority(D),webManifestUrl(D)];;;;"/>
+    </map>
+
+</incidents>
