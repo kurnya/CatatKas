@@ -2046,13 +2046,21 @@ function csvCell(value) {
 }
 
 function today() {
-  return new Date().toISOString().slice(0, 10);
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
 }
 
 function addDays(date, days) {
-  const next = new Date(`${date}T00:00:00`);
+  const [y, m, d] = date.split("-").map(Number);
+  const next = new Date(y, m - 1, d);
   next.setDate(next.getDate() + days);
-  return next.toISOString().slice(0, 10);
+  const ny = next.getFullYear();
+  const nm = String(next.getMonth() + 1).padStart(2, "0");
+  const nd = String(next.getDate()).padStart(2, "0");
+  return `${ny}-${nm}-${nd}`;
 }
 
 function formatRupiahInput(value) {
