@@ -52,16 +52,22 @@ let activeFilters = {
   payment: "Semua"
 };
 let draftFilters = { ...activeFilters };
+let activeDownloadPlatform = "android";
 
 const elements = {
   pageTitle: document.querySelector("#pageTitle"),
   pages: document.querySelectorAll(".page"),
   navItems: document.querySelectorAll(".nav-item"),
   installButton: document.querySelector("#installButton"),
-  installBadge: document.querySelector("#installBadge"),
-  downloadMenu: document.querySelector("#downloadMenu"),
+  installHelpOverlay: document.querySelector("#installHelpOverlay"),
+  installHelpSheet: document.querySelector("#installHelpSheet"),
+  closeInstallHelpSheet: document.querySelector("#closeInstallHelpSheet"),
+  openSettingsFromHelp: document.querySelector("#openSettingsFromHelp"),
+  downloadAppSection: document.querySelector("#downloadAppSection"),
   downloadPlatformButtons: document.querySelectorAll("[data-download-platform]"),
-  settingsInstallButton: document.querySelector("#settingsInstallButton"),
+  downloadGuideTitle: document.querySelector("#downloadGuideTitle"),
+  downloadGuideText: document.querySelector("#downloadGuideText"),
+  downloadGuideAction: document.querySelector("#downloadGuideAction"),
   downloadAppVersion: document.querySelector("#downloadAppVersion"),
   installHelperText: document.querySelector("#installHelperText"),
   toastContainerTop: document.querySelector("#toastContainerTop"),
@@ -241,65 +247,49 @@ function bindEvents() {
     button.addEventListener("click", () => addMasterItem(button.dataset.addMaster));
   });
 
-  // Header install button navigates to settings page
+  // Header help button opens installation guidance.
   elements.installButton.addEventListener("click", () => {
-    navigate("settings");
+    openInstallHelpSheet();
   });
+  elements.installHelpOverlay.addEventListener("click", closeInstallHelpSheet);
+  elements.closeInstallHelpSheet.addEventListener("click", closeInstallHelpSheet);
+  elements.openSettingsFromHelp.addEventListener("click", openSettingsDownloadSection);
 
   elements.downloadPlatformButtons.forEach((button) => {
-    button.addEventListener("click", () => handleAppDownload(button.dataset.downloadPlatform));
+    button.addEventListener("click", () => selectDownloadPlatform(button.dataset.downloadPlatform));
   });
+  if (elements.downloadGuideAction) {
+    elements.downloadGuideAction.addEventListener("click", () => handleAppDownload(activeDownloadPlatform));
+  }
   elements.appModalOverlay.addEventListener("click", () => closeModal(false));
   elements.appModalClose.addEventListener("click", () => closeModal(false));
   elements.appModalCancel.addEventListener("click", () => closeModal(false));
 
-  // Always hide install button on page load; it will only appear
-  // when beforeinstallprompt fires AND the app is NOT already installed.
-  elements.installButton.hidden = true;
+  elements.installButton.hidden = false;
 
   if (isRunningStandalone()) {
-    // App is already installed and running as PWA/TWA — never show install button
-    console.log("[PWA Debug] Running in standalone mode, install button stays hidden");
+    console.log("[PWA Debug] Running in standalone mode, install help stays available");
   } else {
     window.addEventListener("beforeinstallprompt", (event) => {
       console.log("[PWA Debug] beforeinstallprompt event fired");
       event.preventDefault();
-      // Double-check: hide button if running inside TWA/APK
       if (isRunningStandalone()) {
-        elements.installButton.hidden = true;
-        if (elements.installBadge) elements.installBadge.style.display = "none";
         updateSettingsInstallButton();
         return;
       }
       deferredPrompt = event;
-      elements.installButton.hidden = false;
-      if (elements.installBadge) elements.installBadge.style.display = "flex";
       updateSettingsInstallButton();
-      console.log("[PWA Debug] deferredPrompt saved, button visible");
-
-      // Auto-hide after 8 seconds if user doesn't tap it.
-      // In a TWA, the button appears but user won't tap it → treat as installed.
-      clearTimeout(installAutoHideTimer);
-      installAutoHideTimer = setTimeout(() => {
-        if (!elements.installButton.hidden) {
-          elements.installButton.hidden = true;
-          if (elements.installBadge) elements.installBadge.style.display = "none";
-          localStorage.setItem("catatkas_app_installed", "1");
-          console.log("[PWA Debug] Install button auto-hidden (TWA detected by inactivity)");
-        }
-      }, 8000);
+      console.log("[PWA Debug] deferredPrompt saved");
     });
 
     // Deferred check: TWA may not report standalone immediately on page load
     window.addEventListener("load", () => {
       window.setTimeout(() => {
         if (isRunningStandalone()) {
-          elements.installButton.hidden = true;
-          if (elements.installBadge) elements.installBadge.style.display = "none";
           deferredPrompt = null;
           clearTimeout(installAutoHideTimer);
           updateSettingsInstallButton();
-          console.log("[PWA Debug] Standalone detected after load, hiding install button");
+          console.log("[PWA Debug] Standalone detected after load");
         }
       }, 500);
     });
@@ -308,8 +298,6 @@ function bindEvents() {
   // Listen for display-mode changes (e.g., user installs/uninstalls)
   window.matchMedia("(display-mode: standalone)").addEventListener("change", (e) => {
     if (e.matches) {
-      elements.installButton.hidden = true;
-      if (elements.installBadge) elements.installBadge.style.display = "none";
       deferredPrompt = null;
       updateSettingsInstallButton();
     }
@@ -318,8 +306,7 @@ function bindEvents() {
   window.addEventListener("appinstalled", () => {
     console.log("[PWA Debug] appinstalled event fired - installation successful");
     deferredPrompt = null;
-    elements.installButton.hidden = true;
-    if (elements.installBadge) elements.installBadge.style.display = "none";
+    elements.installButton.hidden = false;
     updateSettingsInstallButton();
     localStorage.setItem("catatkas_app_installed", "1");
     closeModal(false);
@@ -515,14 +502,44 @@ function openFilterSheet() {
   elements.filterOverlay.hidden = false;
   elements.filterSheet.classList.add("open");
   elements.filterSheet.setAttribute("aria-hidden", "false");
-  document.body.classList.add("sheet-open");
+  updateSheetBodyLock();
 }
 
 function closeFilterSheet() {
   elements.filterSheet.classList.remove("open");
   elements.filterSheet.setAttribute("aria-hidden", "true");
   elements.filterOverlay.hidden = true;
-  document.body.classList.remove("sheet-open");
+  updateSheetBodyLock();
+}
+
+function openInstallHelpSheet() {
+  elements.installHelpOverlay.hidden = false;
+  elements.installHelpSheet.classList.add("open");
+  elements.installHelpSheet.setAttribute("aria-hidden", "false");
+  updateSheetBodyLock();
+}
+
+function closeInstallHelpSheet() {
+  elements.installHelpSheet.classList.remove("open");
+  elements.installHelpSheet.setAttribute("aria-hidden", "true");
+  elements.installHelpOverlay.hidden = true;
+  updateSheetBodyLock();
+}
+
+function updateSheetBodyLock() {
+  const filterOpen = elements.filterSheet.classList.contains("open");
+  const installHelpOpen = elements.installHelpSheet.classList.contains("open");
+  document.body.classList.toggle("sheet-open", filterOpen || installHelpOpen);
+}
+
+function openSettingsDownloadSection() {
+  closeInstallHelpSheet();
+  navigate("settings");
+  window.setTimeout(() => {
+    if (elements.downloadAppSection && typeof elements.downloadAppSection.scrollIntoView === "function") {
+      elements.downloadAppSection.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, 220);
 }
 
 function handleGlobalKeydown(event) {
@@ -531,7 +548,13 @@ function handleGlobalKeydown(event) {
       closeModal(false);
       return;
     }
-    closeFilterSheet();
+    if (elements.installHelpSheet.classList.contains("open")) {
+      closeInstallHelpSheet();
+      return;
+    }
+    if (elements.filterSheet.classList.contains("open")) {
+      closeFilterSheet();
+    }
   }
 
   if (event.key === "Tab" && !elements.appModalOverlay.hidden) {
@@ -1297,8 +1320,7 @@ async function installApp() {
   
   if (isRunningStandalone()) {
     console.log("[PWA Debug] Already in standalone mode");
-    elements.installButton.hidden = true;
-    if (elements.installBadge) elements.installBadge.style.display = "none";
+    elements.installButton.hidden = false;
     localStorage.setItem("catatkas_app_installed", "1");
     updateSettingsInstallButton();
     return;
@@ -1325,8 +1347,7 @@ async function installApp() {
       // User dismissed — likely a TWA where install isn't possible
       console.log("[PWA Debug] User dismissed install");
       localStorage.setItem("catatkas_app_installed", "1");
-      elements.installButton.hidden = true;
-      if (elements.installBadge) elements.installBadge.style.display = "none";
+      elements.installButton.hidden = false;
       updateSettingsInstallButton();
     }
     
@@ -1335,15 +1356,12 @@ async function installApp() {
     console.error("[PWA Debug] Install prompt error:", error);
     // Prompt failed — likely a TWA context
     localStorage.setItem("catatkas_app_installed", "1");
-    elements.installButton.hidden = true;
-    if (elements.installBadge) elements.installBadge.style.display = "none";
+    elements.installButton.hidden = false;
     updateSettingsInstallButton();
   }
 }
 
 function handleAppDownload(platform) {
-  if (elements.downloadMenu) elements.downloadMenu.open = false;
-
   if (platform === "android") {
     window.location.href = ANDROID_APK_DOWNLOAD_URL;
     showToast("Download APK Android dimulai dari GitHub Release.", "success");
@@ -1356,6 +1374,47 @@ function handleAppDownload(platform) {
   }
 
   installApp();
+}
+
+function selectDownloadPlatform(platform) {
+  if (!["android", "ios", "desktop"].includes(platform)) return;
+  activeDownloadPlatform = platform;
+  renderDownloadGuide();
+}
+
+function renderDownloadGuide() {
+  const guides = {
+    android: {
+      title: "Android APK",
+      text: "Download file APK dari GitHub Release, lalu buka file tersebut untuk install di Android.",
+      action: "Download APK"
+    },
+    ios: {
+      title: "iOS Add to Home Screen",
+      text: "Buka di Safari → Share → Add to Home Screen.",
+      action: ""
+    },
+    desktop: {
+      title: "Desktop PWA",
+      text: "Install melalui browser yang mendukung PWA.",
+      action: ""
+    }
+  };
+
+  const guide = guides[activeDownloadPlatform] || guides.android;
+
+  elements.downloadPlatformButtons.forEach((button) => {
+    const active = button.dataset.downloadPlatform === activeDownloadPlatform;
+    button.classList.toggle("active", active);
+    button.setAttribute("aria-selected", String(active));
+  });
+
+  if (elements.downloadGuideTitle) elements.downloadGuideTitle.textContent = guide.title;
+  if (elements.downloadGuideText) elements.downloadGuideText.textContent = guide.text;
+  if (elements.downloadGuideAction) {
+    elements.downloadGuideAction.hidden = !guide.action;
+    elements.downloadGuideAction.textContent = guide.action || "";
+  }
 }
 
 function isRunningStandalone() {
@@ -1378,26 +1437,20 @@ function isIOSDevice() {
 }
 
 function updateSettingsInstallButton() {
-  if (!elements.settingsInstallButton) return;
   if (isRunningStandalone()) {
-    elements.settingsInstallButton.textContent = "Pilih Versi Download";
-    elements.settingsInstallButton.classList.add("installed-state");
     if (elements.installHelperText) {
-      elements.installHelperText.textContent = "CatatKas sudah terinstall. Anda tetap bisa mengunduh versi lain dari menu ini.";
+      elements.installHelperText.textContent = "CatatKas sudah terinstall. Anda tetap bisa melihat panduan platform lain di sini.";
     }
   } else if (deferredPrompt) {
-    elements.settingsInstallButton.textContent = "Pilih Versi Download";
-    elements.settingsInstallButton.classList.remove("installed-state");
     if (elements.installHelperText) {
       elements.installHelperText.textContent = "Desktop memakai installer bawaan browser. iOS memakai Share lalu Add to Home Screen.";
     }
   } else {
-    elements.settingsInstallButton.textContent = "Pilih Versi Download";
-    elements.settingsInstallButton.classList.remove("installed-state");
     if (elements.installHelperText) {
-      elements.installHelperText.textContent = "Pilih APK Android, iOS Add to Home Screen, atau Desktop sesuai perangkat Anda.";
+      elements.installHelperText.textContent = "Pilih platform untuk melihat panduan instalasi yang sesuai.";
     }
   }
+  renderDownloadGuide();
 }
 
 
@@ -1958,19 +2011,6 @@ function escapeHtml(value) {
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;");
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

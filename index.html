@@ -21,13 +21,12 @@
         <p class="eyebrow">CatatKas</p>
         <h1 id="pageTitle">Beranda</h1>
       </div>
-      <button class="install-info-btn" id="installButton" hidden aria-label="Panduan install aplikasi" title="Cara install aplikasi">
-        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <button class="install-info-btn" id="installButton" aria-label="Panduan instalasi CatatKas" title="Panduan instalasi">
+        <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <circle cx="12" cy="12" r="10"/>
-          <line x1="12" y1="7" x2="12" y2="13"/>
-          <circle cx="12" cy="16.5" r="0.5" fill="currentColor" stroke="none"/>
+          <path d="M9.1 9a3 3 0 1 1 5.7 1.35c-.7 1.05-1.8 1.35-2.35 2.15"/>
+          <path d="M12 17h.01"/>
         </svg>
-        <span class="install-badge" id="installBadge">!</span>
       </button>
     </header>
 
@@ -313,7 +312,7 @@
           </div>
         </section>
 
-        <section class="settings-card panel download-card">
+        <section class="settings-card panel download-card" id="downloadAppSection">
           <div class="settings-heading">
             <h2>Download Aplikasi</h2>
             <p class="helper-text">Install CatatKas sebagai aplikasi di perangkat Anda agar bisa digunakan offline dan diakses lebih cepat dari layar utama.</p>
@@ -327,35 +326,19 @@
               <span id="downloadAppVersion">v1.1.1</span>
             </div>
           </div>
-          <div class="settings-actions">
-            <details class="download-dropdown" id="downloadMenu">
-              <summary class="primary-button" id="settingsInstallButton">Download Aplikasi</summary>
-              <div class="download-options" aria-label="Pilihan download aplikasi">
-                <button type="button" data-download-platform="android">
-                  <span class="download-option-icon" aria-hidden="true">A</span>
-                  <span>
-                    <strong>APK Android</strong>
-                    <small>Download dari GitHub Release</small>
-                  </span>
-                </button>
-                <button type="button" data-download-platform="ios">
-                  <span class="download-option-icon" aria-hidden="true">i</span>
-                  <span>
-                    <strong>iOS</strong>
-                    <small>Share lalu Add to Home Screen</small>
-                  </span>
-                </button>
-                <button type="button" data-download-platform="desktop">
-                  <span class="download-option-icon" aria-hidden="true">D</span>
-                  <span>
-                    <strong>Desktop</strong>
-                    <small>Install lewat browser</small>
-                  </span>
-                </button>
-              </div>
-            </details>
+          <div class="download-segmented" role="tablist" aria-label="Pilihan platform download">
+            <button type="button" class="download-segment active" data-download-platform="android" role="tab" aria-selected="true">Android</button>
+            <button type="button" class="download-segment" data-download-platform="ios" role="tab" aria-selected="false">iOS</button>
+            <button type="button" class="download-segment" data-download-platform="desktop" role="tab" aria-selected="false">Desktop</button>
           </div>
-          <p class="helper-text" id="installHelperText">Pilih APK Android, iOS Add to Home Screen, atau Desktop sesuai perangkat Anda.</p>
+          <div class="download-guide-card" id="downloadGuideCard">
+            <div>
+              <strong id="downloadGuideTitle">Android APK</strong>
+              <p id="downloadGuideText">Download file APK dari GitHub Release, lalu buka file tersebut untuk install di Android.</p>
+            </div>
+            <button type="button" class="primary-button compact-action" id="downloadGuideAction">Download APK</button>
+          </div>
+          <p class="helper-text" id="installHelperText">Pilih platform untuk melihat panduan instalasi yang sesuai.</p>
         </section>
 
         <section class="settings-card panel about-card">
@@ -397,6 +380,27 @@
       <div class="sheet-actions">
         <button type="button" class="ghost-button" id="resetFilterButton">Reset</button>
         <button type="button" class="primary-button" id="applyFilterButton">Terapkan</button>
+      </div>
+    </aside>
+
+    <div class="sheet-overlay" id="installHelpOverlay" hidden></div>
+    <aside class="bottom-sheet install-help-sheet" id="installHelpSheet" aria-hidden="true" aria-labelledby="installHelpTitle">
+      <div class="sheet-handle"></div>
+      <div class="sheet-header">
+        <div>
+          <p class="eyebrow">Bantuan</p>
+          <h2 id="installHelpTitle">Informasi Instalasi</h2>
+        </div>
+        <button type="button" class="close-sheet-button" id="closeInstallHelpSheet" aria-label="Tutup panduan">x</button>
+      </div>
+      <div class="sheet-content install-help-content">
+        <div class="download-guide-card install-help-card">
+          <div>
+            <strong>Download Aplikasi</strong>
+            <p>Untuk menginstal atau memperbarui aplikasi CatatKas, buka halaman Settings, lalu masuk ke bagian Download Aplikasi.</p>
+          </div>
+          <button type="button" class="primary-button" id="openSettingsFromHelp">Buka Settings</button>
+        </div>
       </div>
     </aside>
 
