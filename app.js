@@ -2,6 +2,9 @@ const STORAGE_KEY = "catatan_keuangan_pwa_v1";
 const PREFERENCES_KEY = "catatan_keuangan_preferences_v1";
 const APP_VERSION = "1.1.1";
 const IS_DEV = location.hostname === "localhost" || location.hostname === "127.0.0.1";
+const GITHUB_RELEASE_URL = "https://github.com/kurnya/CatatKas/releases/latest";
+const ANDROID_APK_DOWNLOAD_URL = `${GITHUB_RELEASE_URL}/download/catatkas-android.apk`;
+const IOS_DOWNLOAD_URL = GITHUB_RELEASE_URL;
 const UPDATE_KEYS = {
   currentVersion: "catatkas_current_version",
   availableVersion: "catatkas_update_available_version",
@@ -57,6 +60,8 @@ const elements = {
   navItems: document.querySelectorAll(".nav-item"),
   installButton: document.querySelector("#installButton"),
   installBadge: document.querySelector("#installBadge"),
+  downloadMenu: document.querySelector("#downloadMenu"),
+  downloadPlatformButtons: document.querySelectorAll("[data-download-platform]"),
   settingsInstallButton: document.querySelector("#settingsInstallButton"),
   downloadAppVersion: document.querySelector("#downloadAppVersion"),
   installHelperText: document.querySelector("#installHelperText"),
@@ -242,8 +247,9 @@ function bindEvents() {
     navigate("settings");
   });
 
-  // Settings page install button triggers the actual install
-  elements.settingsInstallButton.addEventListener("click", installApp);
+  elements.downloadPlatformButtons.forEach((button) => {
+    button.addEventListener("click", () => handleAppDownload(button.dataset.downloadPlatform));
+  });
   elements.appModalOverlay.addEventListener("click", () => closeModal(false));
   elements.appModalClose.addEventListener("click", () => closeModal(false));
   elements.appModalCancel.addEventListener("click", () => closeModal(false));
@@ -1336,6 +1342,24 @@ async function installApp() {
   }
 }
 
+function handleAppDownload(platform) {
+  if (elements.downloadMenu) elements.downloadMenu.open = false;
+
+  if (platform === "android") {
+    window.location.href = ANDROID_APK_DOWNLOAD_URL;
+    showToast("Download APK Android dimulai dari GitHub Release.", "success");
+    return;
+  }
+
+  if (platform === "ios") {
+    window.location.href = IOS_DOWNLOAD_URL;
+    showToast("Membuka halaman GitHub Release untuk versi iOS.", "success");
+    return;
+  }
+
+  installApp();
+}
+
 function isRunningStandalone() {
   return window.matchMedia("(display-mode: standalone)").matches || 
          window.matchMedia("(display-mode: fullscreen)").matches ||
@@ -1358,25 +1382,22 @@ function isIOSDevice() {
 function updateSettingsInstallButton() {
   if (!elements.settingsInstallButton) return;
   if (isRunningStandalone()) {
-    elements.settingsInstallButton.textContent = "Aplikasi Sudah Terinstall";
-    elements.settingsInstallButton.disabled = true;
+    elements.settingsInstallButton.textContent = "Pilih Versi Download";
     elements.settingsInstallButton.classList.add("installed-state");
     if (elements.installHelperText) {
-      elements.installHelperText.textContent = "CatatKas sudah terinstall di perangkat Anda.";
+      elements.installHelperText.textContent = "CatatKas sudah terinstall. Anda tetap bisa mengunduh versi lain dari menu ini.";
     }
   } else if (deferredPrompt) {
-    elements.settingsInstallButton.textContent = "Download Aplikasi";
-    elements.settingsInstallButton.disabled = false;
+    elements.settingsInstallButton.textContent = "Pilih Versi Download";
     elements.settingsInstallButton.classList.remove("installed-state");
     if (elements.installHelperText) {
-      elements.installHelperText.textContent = "Tekan tombol di atas untuk menginstall CatatKas di perangkat Anda.";
+      elements.installHelperText.textContent = "Desktop memakai installer bawaan browser. APK Android dan iOS diarahkan ke GitHub Release.";
     }
   } else {
-    elements.settingsInstallButton.textContent = "Download Aplikasi";
-    elements.settingsInstallButton.disabled = false;
+    elements.settingsInstallButton.textContent = "Pilih Versi Download";
     elements.settingsInstallButton.classList.remove("installed-state");
     if (elements.installHelperText) {
-      elements.installHelperText.textContent = "Buka halaman ini di Chrome untuk menginstall aplikasi.";
+      elements.installHelperText.textContent = "Pilih APK Android, iOS, atau Desktop sesuai perangkat Anda.";
     }
   }
 }
@@ -1939,7 +1960,6 @@ function escapeHtml(value) {
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;");
 }
-
 
 
 

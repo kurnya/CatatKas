@@ -328,9 +328,16 @@
             </div>
           </div>
           <div class="settings-actions">
-            <button type="button" class="primary-button" id="settingsInstallButton">Download Aplikasi</button>
+            <details class="download-dropdown" id="downloadMenu">
+              <summary class="primary-button" id="settingsInstallButton">Download Aplikasi</summary>
+              <div class="download-options" aria-label="Pilihan download aplikasi">
+                <button type="button" data-download-platform="android">APK Android</button>
+                <button type="button" data-download-platform="ios">iOS</button>
+                <button type="button" data-download-platform="desktop">Desktop</button>
+              </div>
+            </details>
           </div>
-          <p class="helper-text" id="installHelperText">Setelah download, buka file APK untuk menginstall di Android.</p>
+          <p class="helper-text" id="installHelperText">Pilih APK Android, iOS, atau Desktop sesuai perangkat Anda.</p>
         </section>
 
         <section class="settings-card panel about-card">
@@ -404,6 +411,5 @@
     <script src="app.js"></script>
   </body>
 </html>
-
 
 

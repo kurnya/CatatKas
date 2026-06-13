@@ -909,10 +909,78 @@ select:focus {
   font-size: 0.8rem;
 }
 
+.download-dropdown {
+  position: relative;
+  width: 100%;
+}
+
+.download-dropdown summary {
+  list-style: none;
+}
+
+.download-dropdown summary::-webkit-details-marker {
+  display: none;
+}
+
+.download-dropdown summary.primary-button {
+  position: relative;
+  padding-right: 36px;
+  cursor: pointer;
+}
+
+.download-dropdown summary.primary-button::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  right: 15px;
+  width: 8px;
+  height: 8px;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: translateY(-65%) rotate(45deg);
+  transition: transform 140ms ease;
+}
+
+.download-dropdown[open] summary.primary-button::after {
+  transform: translateY(-35%) rotate(225deg);
+}
+
+.download-options {
+  position: absolute;
+  z-index: 8;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  display: grid;
+  gap: 5px;
+  padding: 7px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--panel);
+  box-shadow: var(--shadow);
+}
+
+.download-options button {
+  width: 100%;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text);
+  padding: 10px 12px;
+  cursor: pointer;
+  font-weight: 800;
+  text-align: left;
+}
+
+.download-options button:hover,
+.download-options button:focus-visible {
+  outline: none;
+  background: var(--soft);
+  color: var(--brand-dark);
+}
+
 .primary-button.installed-state {
-  background: var(--muted);
-  cursor: default;
-  opacity: 0.7;
+  background: var(--brand-dark);
 }
 
 .about-list div {
@@ -1265,5 +1333,4 @@ select:focus {
     transform: translateY(-10px);
   }
 }
-
 
