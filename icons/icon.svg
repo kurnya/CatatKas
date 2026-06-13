@@ -1,9 +1,39 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" rx="112" fill="#0f766e"/>
-  <path fill="#ffffff" d="M128 148c0-22 18-40 40-40h176c22 0 40 18 40 40v216c0 22-18 40-40 40H168c-22 0-40-18-40-40V148Z"/>
-  <path fill="#d9f2ec" d="M168 160h176v56H168z"/>
-  <path fill="#0f766e" d="M178 260h156v28H178zm0 56h104v28H178z"/>
-  <circle cx="336" cy="332" r="52" fill="#f7c948"/>
-  <path fill="#17211c" d="M331 300h14v64h-14z"/>
-  <path fill="#17211c" d="M306 325h64v14h-64z"/>
+  <!-- Rounded square background -->
+  <rect width="512" height="512" rx="108" fill="#f5f5f5"/>
+
+  <!-- Credit card (behind wallet) -->
+  <rect x="108" y="120" width="200" height="130" rx="14" fill="#1a6b63"/>
+  <rect x="108" y="152" width="200" height="18" fill="#e8e8e8" opacity="0.5"/>
+  <circle cx="148" cy="210" r="14" fill="#d4d4d4" opacity="0.5"/>
+
+  <!-- Receipt (emerging from wallet) -->
+  <rect x="196" y="100" width="160" height="180" rx="6" fill="#ffffff"/>
+  <path d="M196 100h160v12l-10 6-10-6-10 6-10-6-10 6-10-6-10 6-10-6-10 6-10-6-10 6-10-6-10 6-10-6-10 6-10-6v-6z" fill="#ffffff"/>
+  <rect x="220" y="148" width="80" height="8" rx="4" fill="#1a3a36"/>
+  <rect x="220" y="172" width="80" height="8" rx="4" fill="#1a3a36"/>
+  <rect x="220" y="196" width="60" height="8" rx="4" fill="#1a3a36"/>
+
+  <!-- Checkmark badge on receipt -->
+  <circle cx="332" cy="132" r="24" fill="#2a9d6e"/>
+  <path d="M320 132l8 8 16-16" fill="none" stroke="#ffffff" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- Wallet body -->
+  <rect x="88" y="220" width="336" height="190" rx="20" fill="#1a6b63"/>
+
+  <!-- Wallet stitching -->
+  <rect x="104" y="236" width="304" height="158" rx="12" fill="none" stroke="#ffffff" stroke-width="2" stroke-dasharray="8 6" opacity="0.6"/>
+
+  <!-- Wallet flap -->
+  <path d="M88 220c0-11 9-20 20-20h296c11 0 20 9 20 20v50H88v-50z" fill="#1d7a70"/>
+
+  <!-- Flap stitching -->
+  <line x1="108" y1="216" x2="404" y2="216" stroke="#ffffff" stroke-width="2" stroke-dasharray="8 6" opacity="0.5"/>
+
+  <!-- Snap button -->
+  <circle cx="380" cy="310" r="18" fill="#15584f"/>
+  <circle cx="380" cy="310" r="8" fill="#ffffff" opacity="0.8"/>
+
+  <!-- Wallet bottom shadow -->
+  <rect x="88" y="390" width="336" height="20" rx="10" fill="#134f48" opacity="0.5"/>
 </svg>

@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#0f766e">
-    <title>Privacy Policy - CatatKas</title>
+    <title>Kebijakan Privasi - CatatKas</title>
     <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
     <link rel="stylesheet" href="styles.css">
     <style>
@@ -16,6 +16,7 @@
       .privacy-container h1 {
         font-size: 1.5rem;
         margin: 0 0 4px;
+        color: var(--text);
       }
       .privacy-updated {
         color: var(--muted);
@@ -24,7 +25,8 @@
       }
       .privacy-container h2 {
         font-size: 1.05rem;
-        margin: 28px 0 10px;
+        margin: 0 0 10px;
+        color: var(--text);
       }
       .privacy-container p,
       .privacy-container ul {
@@ -37,6 +39,10 @@
       }
       .privacy-container li {
         margin-bottom: 6px;
+      }
+      .privacy-container a {
+        color: var(--brand-dark);
+        word-break: break-all;
       }
       .privacy-back {
         display: inline-flex;
@@ -58,73 +64,120 @@
         margin-bottom: 16px;
         box-shadow: var(--shadow-soft);
       }
+      .privacy-section p:last-child,
+      .privacy-section ul:last-child {
+        margin-bottom: 0;
+      }
+      .privacy-highlight {
+        background: var(--soft);
+        border-left: 3px solid var(--brand);
+        padding: 12px 16px;
+        border-radius: 0 10px 10px 0;
+        margin: 12px 0;
+        font-size: 0.9rem;
+        line-height: 1.6;
+      }
     </style>
   </head>
   <body>
     <div class="privacy-container">
       <a class="privacy-back" href="index.html">← Kembali ke CatatKas</a>
-      <h1>Privacy Policy</h1>
+      <h1>Kebijakan Privasi CatatKas</h1>
       <p class="privacy-updated">Terakhir diperbarui: 13 Juni 2026</p>
 
       <div class="privacy-section">
         <h2>1. Pendahuluan</h2>
-        <p>CatatKas ("kami", "aplikasi") menghormati privasi Anda. Kebijakan ini menjelaskan bagaimana kami menangani informasi saat Anda menggunakan aplikasi CatatKas.</p>
+        <p>CatatKas ("kami", "aplikasi") menghormati dan menjunjung tinggi privasi Anda. Kebijakan Privasi ini menjelaskan secara transparun bagaimana aplikasi CatatKas memperlakukan data Anda saat menggunakan aplikasi ini.</p>
+        <p>Dengan menggunakan CatatKas, Anda menyetujui ketentuan yang dijelaskan dalam Kebijakan Privasi ini.</p>
       </div>
 
       <div class="privacy-section">
-        <h2>2. Data yang Kami Kumpulkan</h2>
-        <p><strong>CatatKas tidak mengumpulkan, mengirim, atau menyimpan data pribadi Anda ke server manapun.</strong></p>
-        <p>Semua data yang Anda masukkan — termasuk transaksi, kategori, subkategori, dan metode pembayaran — disimpan secara lokal di perangkat Anda menggunakan <strong>localStorage</strong> browser.</p>
-      </div>
-
-      <div class="privacy-section">
-        <h2>3. Penyimpanan Data</h2>
+        <h2>2. Informasi yang Tidak Kami Kumpulkan</h2>
+        <p><strong>CatatKas tidak mengumpulkan data pribadi Anda dalam bentuk apapun.</strong> Secara khusus:</p>
         <ul>
-          <li>Semua data transaksi disimpan di <strong>localStorage</strong> pada browser perangkat Anda.</li>
-          <li>Data tidak dikirim ke server, cloud, atau pihak ketiga manapun.</li>
-          <li>Data dapat dihapus kapan saja melalui fitur <strong>Reset</strong> di halaman Pengaturan aplikasi.</li>
-          <li>Menghapus data browser atau cache akan menghapus semua data aplikasi dari perangkat.</li>
+          <li>CatatKas <strong>tidak memiliki fitur login</strong> atau pendaftaran akun pengguna.</li>
+          <li>CatatKas <strong>tidak mengumpulkan data pengguna</strong> ke server pengembang.</li>
+          <li>CatatKas <strong>tidak membagikan data pengguna</strong> ke pihak ketiga manapun.</li>
+          <li>CatatKas <strong>tidak menggunakan iklan</strong> dalam bentuk apapun.</li>
+          <li>CatatKas <strong>tidak menggunakan analytics, tracking, atau pelacakan</strong> perilaku pengguna.</li>
         </ul>
       </div>
 
       <div class="privacy-section">
-        <h2>4. Layanan Pihak Ketiga</h2>
-        <p>CatatKas di-host melalui <strong>GitHub Pages</strong>. GitHub dapat mengumpulkan data teknis standar seperti alamat IP dan informasi browser sesuai dengan <a href="https://docs.github.com/en/site-policy/privacy-policies/github-privacy-statement" target="_blank" rel="noopener">GitHub Privacy Statement</a>.</p>
-        <p>Aplikasi ini tidak menggunakan analitik, pelacakan, iklan, atau layanan pihak ketiga lainnya.</p>
-      </div>
-
-      <div class="privacy-section">
-        <h2>5. Offline & PWA</h2>
-        <p>CatatKas dapat berjalan secara offline menggunakan teknologi Progressive Web App (PWA) dan Service Worker. Tidak ada data yang dikirim saat offline.</p>
-      </div>
-
-      <div class="privacy-section">
-        <h2>6. Keamanan Data</h2>
-        <p>Karena data disimpan secara lokal di perangkat Anda, keamanan data bergantung pada keamanan perangkat dan browser Anda. Kami menyarankan untuk:</p>
+        <h2>3. Data yang Disimpan Secara Lokal</h2>
+        <p>Seluruh data yang Anda masukkan di CatatKas disimpan <strong>secara lokal di perangkat Anda</strong> menggunakan fitur localStorage pada browser. Data yang disimpan meliputi:</p>
         <ul>
-          <li>Menjaga perangkat tetap terkunci dengan PIN atau biometrik.</li>
+          <li>Transaksi pemasukan dan pengeluaran;</li>
+          <li>Kategori;</li>
+          <li>Subkategori;</li>
+          <li>Metode pembayaran;</li>
+          <li>Preferensi aplikasi (mata uang, format tanggal, tema, dan pengaturan lainnya).</li>
+        </ul>
+        <div class="privacy-highlight">
+          Pengembang tidak memiliki akses ke data transaksi atau catatan keuangan pengguna karena seluruh data disimpan secara lokal di perangkat pengguna.
+        </div>
+      </div>
+
+      <div class="privacy-section">
+        <h2>4. Fitur Export dan Import Data</h2>
+        <p>CatatKas menyediakan fitur <strong>Export JSON</strong>, <strong>Export CSV</strong>, dan <strong>Import JSON</strong> untuk keperluan backup dan pemulihan data. Ketentuan terkait fitur ini:</p>
+        <ul>
+          <li>File hasil export dikelola sepenuhnya oleh pengguna.</li>
+          <li>CatatKas <strong>tidak mengunggah</strong> file backup ke server pengembang atau pihak ketiga manapun.</li>
+          <li>Pengguna bertanggung jawab penuh untuk menyimpan dan menjaga kerahasiaan file backup miliknya.</li>
+        </ul>
+      </div>
+
+      <div class="privacy-section">
+        <h2>5. Penyimpanan dan Keamanan Data</h2>
+        <ul>
+          <li>Semua data disimpan di <strong>localStorage</strong> pada browser di perangkat Anda.</li>
+          <li>Data tidak dikirim ke server, cloud, atau pihak ketiga manapun.</li>
+          <li>Data dapat dihapus kapan saja melalui fitur di halaman Pengaturan aplikasi.</li>
+          <li>Menghapus data browser atau cache dapat menghapus semua data aplikasi dari perangkat.</li>
+        </ul>
+        <p>Kami menyarankan Anda untuk:</p>
+        <ul>
+          <li>Menjaga keamanan perangkat dengan PIN, pola, atau biometrik.</li>
           <li>Melakukan backup data secara berkala melalui fitur <strong>Export JSON</strong> di Pengaturan.</li>
         </ul>
       </div>
 
       <div class="privacy-section">
-        <h2>7. Hak Anda</h2>
-        <p>Anda memiliki kendali penuh atas data Anda:</p>
+        <h2>6. Hak Pengguna</h2>
+        <p>Anda memiliki kendali penuh atas seluruh data di dalam aplikasi CatatKas. Anda dapat:</p>
         <ul>
-          <li><strong>Melihat</strong> semua data melalui halaman Transaksi.</li>
-          <li><strong>Mengunduh</strong> cadangan data melalui Export JSON atau CSV.</li>
-          <li><strong>Menghapus</strong> semua data melalui fitur Hapus Semua Transaksi atau Reset Master Data di Pengaturan.</li>
+          <li><strong>Mengedit</strong> transaksi yang telah dicatat;</li>
+          <li><strong>Menghapus</strong> transaksi satu per satu;</li>
+          <li><strong>Menghapus semua transaksi</strong> sekaligus melalui fitur "Hapus Semua Transaksi" di Pengaturan;</li>
+          <li><strong>Mereset master data</strong> (kategori, subkategori, dan metode pembayaran) ke kondisi bawaan melalui fitur "Reset Master Data" di Pengaturan;</li>
+          <li><strong>Menghapus seluruh data aplikasi</strong> melalui pengaturan perangkat atau pengaturan browser (hapus data situs/clear site data).</li>
         </ul>
       </div>
 
       <div class="privacy-section">
-        <h2>8. Perubahan Kebijakan</h2>
-        <p>Kami dapat memperbarui kebijakan ini dari waktu ke waktu. Perubahan akan ditampilkan di halaman ini dengan tanggal pembaruan terbaru.</p>
+        <h2>7. Layanan Pihak Ketiga</h2>
+        <p>CatatKas di-host melalui <strong>GitHub Pages</strong>. GitHub dapat mengumpulkan data teknis standar seperti alamat IP dan informasi browser sesuai dengan <a href="https://docs.github.com/en/site-policy/privacy-policies/github-privacy-statement" target="_blank" rel="noopener">GitHub Privacy Statement</a>.</p>
+        <p>Selain hosting, CatatKas <strong>tidak menggunakan layanan pihak ketiga</strong> lainnya — tidak ada SDK analitik, pelacakan, iklan, atau layanan pengumpulan data.</p>
       </div>
 
       <div class="privacy-section">
-        <h2>9. Kontak</h2>
-        <p>Jika Anda memiliki pertanyaan mengenai kebijakan privasi ini, Anda dapat menghubungi kami melalui repository GitHub: <a href="https://github.com/kurnya/CatatKas" target="_blank" rel="noopener">github.com/kurnya/CatatKas</a></p>
+        <h2>8. Mode Offline</h2>
+        <p>CatatKas dapat berjalan secara offline menggunakan teknologi Progressive Web App (PWA) dan Service Worker. Seluruh fitur aplikasi berfungsi tanpa koneksi internet, dan tidak ada data yang dikirim keluar dari perangkat saat offline.</p>
+      </div>
+
+      <div class="privacy-section">
+        <h2>9. Perubahan Kebijakan Privasi</h2>
+        <p>Kami dapat memperbarui Kebijakan Privasi ini dari waktu ke waktu. Setiap perubahan akan ditampilkan di halaman ini beserta tanggal pembaruan terbaru. Kami menyarankan Anda untuk meninjau halaman ini secara berkala.</p>
+      </div>
+
+      <div class="privacy-section">
+        <h2>10. Kontak</h2>
+        <p>Jika Anda memiliki pertanyaan, keluhan, atau masukan terkait Kebijakan Privasi ini, Anda dapat menghubungi kami melalui:</p>
+        <ul>
+          <li>Email: <a href="mailto:dimasqpr23@gmail.com">dimasqpr23@gmail.com</a></li>
+          <li>GitHub: <a href="https://github.com/kurnya/CatatKas" target="_blank" rel="noopener">github.com/kurnya/CatatKas</a></li>
+        </ul>
       </div>
     </div>
   </body>
