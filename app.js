@@ -448,11 +448,18 @@ function saveTransaction(event) {
 }
 
 function renderHome() {
+  const month = elements.summaryMonth.value;
   const monthTransactions = getMonthTransactions();
   const totals = getTotals(monthTransactions);
+
+  // Cumulative balance: all transactions up to end of selected month
+  const allUpToMonth = state.transactions.filter((item) => item.date <= month + "-31");
+  const cumulative = getTotals(allUpToMonth);
+  const cumulativeBalance = cumulative.income - cumulative.expense;
+
   elements.incomeTotal.textContent = rupiah(totals.income);
   elements.expenseTotal.textContent = rupiah(totals.expense);
-  elements.balanceTotal.textContent = rupiah(totals.income - totals.expense);
+  elements.balanceTotal.textContent = rupiah(cumulativeBalance);
   renderTransactionCards(elements.recentList, getSortedTransactions(monthTransactions).slice(0, 5), false);
 }
 
