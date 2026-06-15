@@ -36,16 +36,12 @@
   "fullScopeUrl": "https://www.catatkas.biz.id/",
   "minSdkVersion": 21,
   "orientation": "default",
-  "fingerprints": [
-    {
-      "value": "72:BA:DE:69:2A:64:8E:8D:A1:2A:43:7F:A2:D1:4B:50:1F:4F:83:2A:62:4F:93:CD:D5:AC:5B:3A:AC:46:F4:98"
-    }
-  ],
+  "fingerprints": [],
   "additionalTrustedOrigins": [],
   "retainedBundles": [],
   "protocolHandlers": [],
   "fileHandlers": [],
   "launchHandlerClientMode": "",
   "displayOverride": [],
-  "appVersion": "2"
+  "appVersion": "3"
 }
