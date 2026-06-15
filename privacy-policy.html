@@ -44,19 +44,6 @@
         color: var(--brand-dark);
         word-break: break-all;
       }
-      .privacy-back {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        margin-bottom: 20px;
-        font-size: 0.88rem;
-        color: var(--brand-dark);
-        text-decoration: none;
-        font-weight: 600;
-      }
-      .privacy-back:hover {
-        text-decoration: underline;
-      }
       .privacy-section {
         background: var(--panel);
         border-radius: 16px;
@@ -81,7 +68,17 @@
   </head>
   <body>
     <div class="privacy-container">
-      <a class="privacy-back" href="index.html">← Kembali ke CatatKas</a>
+      <nav class="legal-nav">
+        <a href="index.html" class="legal-nav-link">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="M12 19l-7-7 7-7"/></svg>
+          Kembali ke CatatKas
+        </a>
+        <div class="legal-nav-links">
+          <a href="privacy-policy.html" class="legal-nav-link active">Kebijakan Privasi</a>
+          <span class="legal-nav-sep">·</span>
+          <a href="terms-of-service.html" class="legal-nav-link">Syarat & Ketentuan</a>
+        </div>
+      </nav>
       <h1>Kebijakan Privasi CatatKas</h1>
       <p class="privacy-updated">Terakhir diperbarui: 15 Juni 2026</p>
 
@@ -197,9 +194,12 @@
           <li>GitHub: <a href="https://github.com/kurnya/CatatKas" target="_blank" rel="noopener">github.com/kurnya/CatatKas</a></li>
         </ul>
       </div>
-      <p style="margin-top:24px;font-size:0.9rem">
-        <a href="terms-of-service.html">Syarat & Ketentuan</a> · <a href="index.html">← Kembali ke Aplikasi</a>
-      </p>
+
+      <nav class="legal-footer">
+        <a href="terms-of-service.html" class="legal-footer-link">Syarat & Ketentuan</a>
+        <span class="legal-footer-sep">·</span>
+        <a href="index.html" class="legal-footer-link">Kembali ke Aplikasi</a>
+      </nav>
     </div>
   </body>
 </html>
