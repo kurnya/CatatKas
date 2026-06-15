@@ -1,6 +1,6 @@
 {
   "packageId": "com.kurnya.catatkas",
-  "host": "kurnya.github.io",
+  "host": "www.catatkas.biz.id",
   "name": "CatatKas",
   "launcherName": "CatatKas",
   "display": "standalone",
@@ -12,9 +12,9 @@
   "navigationDividerColorDark": "#000000",
   "backgroundColor": "#F4F6F5",
   "enableNotifications": true,
-  "startUrl": "/CatatKas/",
-  "iconUrl": "https://kurnya.github.io/CatatKas/icons/icon-512.png",
-  "maskableIconUrl": "https://kurnya.github.io/CatatKas/icons/icon-512.png",
+  "startUrl": "/",
+  "iconUrl": "https://www.catatkas.biz.id/icons/icon-512.png",
+  "maskableIconUrl": "https://www.catatkas.biz.id/icons/icon-512.png",
   "splashScreenFadeOutDuration": 300,
   "signingKey": {
     "path": "D:\\01Projek\\DEV\\CatatKas\\android.keystore",
@@ -24,7 +24,7 @@
   "appVersionCode": 3,
   "shortcuts": [],
   "generatorApp": "bubblewrap-cli",
-  "webManifestUrl": "https://kurnya.github.io/CatatKas/manifest.json",
+  "webManifestUrl": "https://www.catatkas.biz.id/manifest.json",
   "fallbackType": "customtabs",
   "features": {},
   "alphaDependencies": {
@@ -33,7 +33,7 @@
   "enableSiteSettingsShortcut": true,
   "isChromeOSOnly": false,
   "isMetaQuest": false,
-  "fullScopeUrl": "https://kurnya.github.io/CatatKas/",
+  "fullScopeUrl": "https://www.catatkas.biz.id/",
   "minSdkVersion": 21,
   "orientation": "default",
   "fingerprints": [
