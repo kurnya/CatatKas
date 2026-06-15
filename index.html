@@ -13,6 +13,8 @@
     <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
     <link rel="apple-touch-icon" href="icons/icon-192.png">
     <link rel="stylesheet" href="styles.css">
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <script src="google-sync.js"></script>
   </head>
   <body>
     <div class="toast-container-top" id="toastContainerTop" aria-live="polite" aria-atomic="true"></div>
@@ -195,6 +197,41 @@
           <p class="helper-text" id="offlineStatusText">Terhubung ke internet. Update aplikasi tersedia.</p>
         </section>
 
+        <section class="settings-card panel sync-card">
+          <div class="settings-heading">
+            <h2>Sinkronisasi Data</h2>
+            <p class="helper-text">Simpan data keuangan Anda di Google Spreadsheet pribadi sebagai cadangan otomatis.</p>
+          </div>
+          <div class="sync-status-row">
+            <span>Status:</span>
+            <span class="sync-badge" id="syncStatusBadge">● Belum terhubung</span>
+          </div>
+          <div class="sync-info" id="syncInfoBlock" hidden>
+            <span>Terakhir disinkronkan:</span>
+            <strong id="syncLastTime">-</strong>
+            <a id="syncSheetLink" href="#" target="_blank" rel="noopener" hidden>Buka Spreadsheet ↗</a>
+          </div>
+          <div class="sync-toggle-row">
+            <label class="sync-switch">
+              <span>Sinkronisasi otomatis:</span>
+              <select id="syncAutoInterval">
+                <option value="off">Mati</option>
+                <option value="6h">Setiap 6 jam</option>
+                <option value="12h">Setiap 12 jam</option>
+                <option value="24h">Setiap 24 jam</option>
+                <option value="3d">Setiap 3 hari</option>
+                <option value="7d">Setiap 1 minggu</option>
+              </select>
+            </label>
+          </div>
+          <div class="settings-actions sync-actions">
+            <button type="button" class="primary-button compact-action" id="syncSignInButton">Masuk dengan Google</button>
+            <button type="button" class="ghost-button compact-action" id="syncPushButton" hidden>Kirim Data</button>
+            <button type="button" class="ghost-button compact-action" id="syncPullButton" hidden>Muat Data</button>
+            <button type="button" class="danger-button compact-action" id="syncSignOutButton" hidden>Putuskan Akun</button>
+          </div>
+        </section>
+
         <section class="settings-card panel">
           <div class="settings-heading">
             <h2>Data & Backup</h2>
@@ -263,9 +300,9 @@
             <label>
               Tema
               <select id="preferenceTheme">
-                <option value="system">System</option>
-                <option value="light">Light</option>
-                <option value="dark">Dark</option>
+                <option value="system">Sistem</option>
+                <option value="light">Terang</option>
+                <option value="dark">Gelap</option>
               </select>
             </label>
             <label>

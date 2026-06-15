@@ -1031,6 +1031,97 @@ select:focus {
   color: #dc2626;
 }
 
+/* ── Google Sheets Sync ────────────────────── */
+.sync-card {
+  border-color: rgba(59, 130, 246, 0.2);
+}
+
+.sync-status-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.875rem;
+}
+
+.sync-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.sync-badge.disconnected {
+  background: #fef2f2;
+  color: #dc2626;
+}
+
+.sync-badge.connected {
+  background: #ecfdf5;
+  color: #059669;
+}
+
+.sync-badge.syncing {
+  background: #eff6ff;
+  color: #2563eb;
+  animation: pulse 1s infinite alternate;
+}
+
+@keyframes pulse {
+  from { opacity: 1; }
+  to { opacity: 0.5; }
+}
+
+.sync-info {
+  display: grid;
+  gap: 4px;
+  font-size: 0.85rem;
+  padding: 8px 12px;
+  background: var(--soft, #f8fafc);
+  border-radius: 8px;
+}
+
+.sync-info a {
+  color: #2563eb;
+  font-size: 0.82rem;
+  text-decoration: underline;
+}
+
+.sync-toggle-row {
+  display: flex;
+  align-items: center;
+}
+
+.sync-switch {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.875rem;
+}
+
+.sync-switch select {
+  padding: 10px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--line, #e2e8f0);
+  background: var(--soft, #f8fafc);
+  color: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  width: 100%;
+  appearance: auto;
+}
+
+.sync-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.sync-actions .danger-button {
+  grid-column: 1 / -1;
+}
+
 .transaction-list {
   display: grid;
   gap: 8px;
@@ -1532,6 +1623,29 @@ body.theme-dark .download-guide-card {
 body.theme-dark .offline-status-badge.online {
   background: rgba(52, 211, 153, 0.14);
   color: #6ee7b7;
+}
+
+body.theme-dark .sync-badge.disconnected {
+  background: rgba(251, 113, 133, 0.14);
+  color: #fb7185;
+}
+
+body.theme-dark .sync-badge.connected {
+  background: rgba(52, 211, 153, 0.14);
+  color: #6ee7b7;
+}
+
+body.theme-dark .sync-badge.syncing {
+  background: rgba(96, 165, 250, 0.14);
+  color: #93c5fd;
+}
+
+body.theme-dark .sync-card {
+  border-color: rgba(96, 165, 250, 0.18);
+}
+
+body.theme-dark .sync-info a {
+  color: #93c5fd;
 }
 
 body.theme-dark .settings-card {

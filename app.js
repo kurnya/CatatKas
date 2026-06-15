@@ -135,7 +135,17 @@ const elements = {
   offlineStatusLabel: document.querySelector("#offlineStatusLabel"),
   offlineStatusText: document.querySelector("#offlineStatusText"),
   downloadAppSection: document.querySelector("#downloadAppSection"),
-  updateCard: document.querySelector(".update-card")
+  updateCard: document.querySelector(".update-card"),
+  // Google Sheets Sync
+  syncStatusBadge: document.querySelector("#syncStatusBadge"),
+  syncInfoBlock: document.querySelector("#syncInfoBlock"),
+  syncLastTime: document.querySelector("#syncLastTime"),
+  syncSheetLink: document.querySelector("#syncSheetLink"),
+  syncAutoInterval: document.querySelector("#syncAutoInterval"),
+  syncSignInButton: document.querySelector("#syncSignInButton"),
+  syncPushButton: document.querySelector("#syncPushButton"),
+  syncPullButton: document.querySelector("#syncPullButton"),
+  syncSignOutButton: document.querySelector("#syncSignOutButton")
 };
 
 init();
@@ -175,6 +185,7 @@ function init() {
   renderOfflineStatus();
   navigate("home");
   registerServiceWorker();
+  initGoogleSheetsSync();
 
   // Listen for online/offline changes
   window.addEventListener("online", renderOfflineStatus);
@@ -257,6 +268,39 @@ function bindEvents() {
 
   elements.downloadPlatformButtons.forEach((button) => {
     button.addEventListener("click", () => selectDownloadPlatform(button.dataset.downloadPlatform));
+  });
+
+  // Google Sheets Sync
+  elements.syncSignInButton.addEventListener("click", () => {
+    if (typeof signIn === "function") signIn();
+  });
+  elements.syncPushButton.addEventListener("click", () => {
+    if (typeof pushToSheets === "function") pushToSheets(state);
+  });
+  elements.syncPullButton.addEventListener("click", () => _handlePullFromSheets());
+  elements.syncSignOutButton.addEventListener("click", async () => {
+    const confirmed = await showConfirmModal({
+      title: "Putuskan Akun Google?",
+      message: "Data di Spreadsheet tidak akan terhapus. Anda dapat menghubungkan kembali kapan saja.",
+      confirmText: "Ya, Putuskan",
+      cancelText: "Batal",
+      type: "danger"
+    });
+    if (!confirmed) return;
+    if (typeof signOut === "function") signOut();
+    _renderSyncUI();
+    showToast("Akun Google berhasil diputuskan.", "info");
+  });
+  elements.syncAutoInterval.addEventListener("change", () => {
+    const val = elements.syncAutoInterval.value;
+    if (typeof setAutoSyncInterval === "function") setAutoSyncInterval(val);
+    const label = elements.syncAutoInterval.options[elements.syncAutoInterval.selectedIndex].text;
+    showToast(
+      val === "off"
+        ? "Sinkronisasi otomatis dinonaktifkan."
+        : `Sinkronisasi otomatis aktif: ${label}.`,
+      "info"
+    );
   });
   if (elements.downloadGuideAction) {
     elements.downloadGuideAction.addEventListener("click", () => handleAppDownload(activeDownloadPlatform));
@@ -342,6 +386,116 @@ function loadState() {
 
 function persist() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  // Auto-sync is now interval-based, handled by google-sync.js timer
+}
+
+// ── Google Sheets Sync Helpers ────────────────
+
+function initGoogleSheetsSync() {
+  if (typeof initGoogleSync !== "function") return;
+
+  initGoogleSync({
+    onSyncStateChange: (isSyncing) => {
+      if (isSyncing) {
+        elements.syncStatusBadge.textContent = "● Sedang menyinkronkan...";
+        elements.syncStatusBadge.className = "sync-badge syncing";
+      } else {
+        _renderSyncUI();
+      }
+    },
+    onSyncComplete: (direction, success, msg) => {
+      showToast(msg, success ? "success" : "warning");
+      _renderSyncUI();
+    },
+    onAuthChange: (isSignedIn) => {
+      _renderSyncUI();
+    }
+  });
+
+  if (typeof setAutoSyncCallback === "function") {
+    setAutoSyncCallback(() => {
+      if (typeof pushToSheets === "function") pushToSheets(state, true); // silent — no toast
+    });
+  }
+
+  _renderSyncUI();
+}
+
+function _renderSyncUI() {
+  const signedIn = typeof isSignedIn === "function" && isSignedIn();
+
+  if (signedIn) {
+    elements.syncStatusBadge.textContent = "● Terhubung";
+    elements.syncStatusBadge.className = "sync-badge connected";
+    elements.syncSignInButton.hidden = true;
+    elements.syncPushButton.hidden = false;
+    elements.syncPullButton.hidden = false;
+    elements.syncSignOutButton.hidden = false;
+
+    const sheetUrl = typeof getSpreadsheetUrl === "function" ? getSpreadsheetUrl() : null;
+    const lastSync = typeof getLastSyncTime === "function" ? getLastSyncTime() : null;
+
+    if (lastSync) {
+      elements.syncInfoBlock.hidden = false;
+      const d = new Date(lastSync);
+      elements.syncLastTime.textContent = d.toLocaleString("id-ID", {
+        day: "numeric", month: "long", year: "numeric",
+        hour: "2-digit", minute: "2-digit"
+      });
+    } else {
+      elements.syncInfoBlock.hidden = true;
+    }
+
+    if (sheetUrl) {
+      elements.syncSheetLink.href = sheetUrl;
+      elements.syncSheetLink.hidden = false;
+    } else {
+      elements.syncSheetLink.hidden = true;
+    }
+  } else {
+    elements.syncStatusBadge.textContent = "● Belum terhubung";
+    elements.syncStatusBadge.className = "sync-badge disconnected";
+    elements.syncSignInButton.hidden = false;
+    elements.syncPushButton.hidden = true;
+    elements.syncPullButton.hidden = true;
+    elements.syncSignOutButton.hidden = true;
+    elements.syncInfoBlock.hidden = true;
+    elements.syncSheetLink.hidden = true;
+  }
+
+  if (typeof getAutoSyncInterval === "function") {
+    elements.syncAutoInterval.value = getAutoSyncInterval();
+  }
+}
+
+async function _handlePullFromSheets() {
+  if (typeof pullFromSheets !== "function") return;
+  const data = await pullFromSheets();
+  if (!data) return;
+
+  // Smart pull merge: sheet is source of truth; local-only (unsynced) transactions are kept
+  if (data.transactions && Array.isArray(data.transactions)) {
+    const sheetById = new Map(data.transactions.map(tx => [tx.id, tx]));
+    const localById = new Map(state.transactions.map(tx => [tx.id, tx]));
+
+    // Start with all sheet data (restores edited/deleted items)
+    const merged = new Map(sheetById);
+    // Keep local transactions that don't exist on sheet (new, unsynced)
+    for (const [id, tx] of localById) {
+      if (!sheetById.has(id)) merged.set(id, tx);
+    }
+    state.transactions = Array.from(merged.values());
+  }
+  if (data.subCategories && Object.keys(data.subCategories).length > 0) {
+    state.subCategories = { ...state.subCategories, ...data.subCategories };
+  }
+  if (data.paymentMethods && data.paymentMethods.length > 0) {
+    state.paymentMethods = data.paymentMethods;
+  }
+
+  persist();
+  renderAll();
+  showToast(`Berhasil memuat ${data.transactions?.length || 0} transaksi dari Spreadsheet.`, "success");
 }
 
 function loadPreferences() {
