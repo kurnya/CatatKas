@@ -8,6 +8,7 @@ const APP_SHELL = [
   SCOPE_PATH,
   SCOPE_PATH + "index.html",
   SCOPE_PATH + "privacy-policy.html",
+  SCOPE_PATH + "terms-of-service.html",
   SCOPE_PATH + "styles.css",
   SCOPE_PATH + "app.js",
   SCOPE_PATH + "google-sync.js",

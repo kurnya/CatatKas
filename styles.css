@@ -1003,6 +1003,13 @@ select:focus {
   text-decoration: underline;
 }
 
+.legal-links {
+  display: flex;
+  gap: 16px;
+  margin-top: 8px;
+  flex-wrap: wrap;
+}
+
 .offline-status-row {
   display: flex;
   align-items: center;
