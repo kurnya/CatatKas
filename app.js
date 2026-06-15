@@ -2,8 +2,8 @@ const STORAGE_KEY = "catatan_keuangan_pwa_v1";
 const PREFERENCES_KEY = "catatan_keuangan_preferences_v1";
 const APP_VERSION = "1.1.2";
 const IS_DEV = location.hostname === "localhost" || location.hostname === "127.0.0.1";
-const GITHUB_RELEASE_URL = "https://github.com/kurnya/CatatKas/releases/latest";
-const ANDROID_APK_DOWNLOAD_URL = `${GITHUB_RELEASE_URL}/download/catatkas-android.apk`;
+const GITHUB_RELEASE_URL = `https://github.com/kurnya/CatatKas/releases/tag/v${APP_VERSION}`;
+const ANDROID_APK_DOWNLOAD_URL = `https://github.com/kurnya/CatatKas/releases/download/v${APP_VERSION}/catatkas-android.apk`;
 const UPDATE_KEYS = {
   currentVersion: "catatkas_current_version",
   availableVersion: "catatkas_update_available_version",

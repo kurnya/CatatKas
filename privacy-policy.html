@@ -83,19 +83,19 @@
     <div class="privacy-container">
       <a class="privacy-back" href="index.html">← Kembali ke CatatKas</a>
       <h1>Kebijakan Privasi CatatKas</h1>
-      <p class="privacy-updated">Terakhir diperbarui: 13 Juni 2026</p>
+      <p class="privacy-updated">Terakhir diperbarui: 15 Juni 2026</p>
 
       <div class="privacy-section">
         <h2>1. Pendahuluan</h2>
-        <p>CatatKas ("kami", "aplikasi") menghormati dan menjunjung tinggi privasi Anda. Kebijakan Privasi ini menjelaskan secara transparun bagaimana aplikasi CatatKas memperlakukan data Anda saat menggunakan aplikasi ini.</p>
+        <p>CatatKas ("kami", "aplikasi") menghormati dan menjunjung tinggi privasi Anda. Kebijakan Privasi ini menjelaskan secara transparan bagaimana aplikasi CatatKas memperlakukan data Anda saat menggunakan aplikasi ini.</p>
         <p>Dengan menggunakan CatatKas, Anda menyetujui ketentuan yang dijelaskan dalam Kebijakan Privasi ini.</p>
       </div>
 
       <div class="privacy-section">
         <h2>2. Informasi yang Tidak Kami Kumpulkan</h2>
-        <p><strong>CatatKas tidak mengumpulkan data pribadi Anda dalam bentuk apapun.</strong> Secara khusus:</p>
+        <p>CatatKas <strong>tidak mengumpulkan data pribadi Anda</strong> ke server pengembang. Secara khusus:</p>
         <ul>
-          <li>CatatKas <strong>tidak memiliki fitur login</strong> atau pendaftaran akun pengguna.</li>
+          <li>CatatKas <strong>tidak memiliki pendaftaran akun</strong> di server pengembang.</li>
           <li>CatatKas <strong>tidak mengumpulkan data pengguna</strong> ke server pengembang.</li>
           <li>CatatKas <strong>tidak membagikan data pengguna</strong> ke pihak ketiga manapun.</li>
           <li>CatatKas <strong>tidak menggunakan iklan</strong> dalam bentuk apapun.</li>
@@ -129,10 +129,27 @@
       </div>
 
       <div class="privacy-section">
-        <h2>5. Penyimpanan dan Keamanan Data</h2>
+        <h2>5. Sinkronisasi Data ke Google Sheets</h2>
+        <p>CatatKas menyediakan fitur opsional untuk menyinkronkan data keuangan Anda ke <strong>Google Spreadsheet pribadi</strong> sebagai cadangan cloud. Ketentuan privasi terkait fitur ini:</p>
+        <ul>
+          <li>Fitur sinkronisasi bersifat <strong>opsional</strong> — Anda harus secara eksplisit masuk dengan akun Google untuk mengaktifkannya.</li>
+          <li>Data hanya dikirim ke <strong>Google Spreadsheet milik Anda sendiri</strong> yang dibuat oleh aplikasi.</li>
+          <li>Kami <strong>tidak memiliki akses</strong> ke spreadsheet atau data keuangan Anda — semua komunikasi terjadi langsung antara perangkat Anda dan Google API.</li>
+          <li>Token akses OAuth2 disimpan secara lokal di perangkat Anda untuk menjaga sesi sinkronisasi.</li>
+          <li>Anda dapat <strong>memutuskan koneksi</strong> kapan saja melalui halaman Pengaturan aplikasi.</li>
+          <li>Memutuskan koneksi tidak menghapus data yang sudah tersimpan di Google Spreadsheet Anda.</li>
+        </ul>
+        <div class="privacy-highlight">
+          Data keuangan Anda tidak pernah melewati atau disimpan di server pengembang CatatKas. Semua proses sinkronisasi terjadi secara langsung antara perangkat Anda dan layanan Google.
+        </div>
+      </div>
+
+      <div class="privacy-section">
+        <h2>6. Penyimpanan dan Keamanan Data</h2>
         <ul>
           <li>Semua data disimpan di <strong>localStorage</strong> pada browser di perangkat Anda.</li>
-          <li>Data tidak dikirim ke server, cloud, atau pihak ketiga manapun.</li>
+          <li>Jika Anda mengaktifkan fitur sinkronisasi, data akan disimpan di <strong>Google Spreadsheet pribadi Anda</strong> melalui Google API.</li>
+          <li>Data tidak dikirim ke server pengembang atau pihak ketiga manapun selain Google (jika sinkronisasi diaktifkan).</li>
           <li>Data dapat dihapus kapan saja melalui fitur di halaman Pengaturan aplikasi.</li>
           <li>Menghapus data browser atau cache dapat menghapus semua data aplikasi dari perangkat.</li>
         </ul>
@@ -144,7 +161,7 @@
       </div>
 
       <div class="privacy-section">
-        <h2>6. Hak Pengguna</h2>
+        <h2>7. Hak Pengguna</h2>
         <p>Anda memiliki kendali penuh atas seluruh data di dalam aplikasi CatatKas. Anda dapat:</p>
         <ul>
           <li><strong>Mengedit</strong> transaksi yang telah dicatat;</li>
@@ -156,29 +173,30 @@
       </div>
 
       <div class="privacy-section">
-        <h2>7. Layanan Pihak Ketiga</h2>
+        <h2>8. Layanan Pihak Ketiga</h2>
         <p>CatatKas di-host melalui <strong>GitHub Pages</strong>. GitHub dapat mengumpulkan data teknis standar seperti alamat IP dan informasi browser sesuai dengan <a href="https://docs.github.com/en/site-policy/privacy-policies/github-privacy-statement" target="_blank" rel="noopener">GitHub Privacy Statement</a>.</p>
-        <p>Selain hosting, CatatKas <strong>tidak menggunakan layanan pihak ketiga</strong> lainnya — tidak ada SDK analitik, pelacakan, iklan, atau layanan pengumpulan data.</p>
+        <p>Jika Anda mengaktifkan fitur sinkronisasi data, CatatKas menggunakan layanan <strong>Google OAuth2</strong> dan <strong>Google Sheets API</strong> untuk menyimpan data di Google Spreadsheet pribadi Anda. Penggunaan data oleh Google tunduk pada <a href="https://policies.google.com/privacy" target="_blank" rel="noopener">Google Privacy Policy</a>.</p>
+        <p>Selain hosting dan sinkronisasi Google, CatatKas <strong>tidak menggunakan layanan pihak ketiga</strong> lainnya — tidak ada SDK analitik, pelacakan, iklan, atau layanan pengumpulan data.</p>
       </div>
 
       <div class="privacy-section">
-        <h2>8. Mode Offline</h2>
+        <h2>9. Mode Offline</h2>
         <p>CatatKas dapat berjalan secara offline menggunakan teknologi Progressive Web App (PWA) dan Service Worker. Seluruh fitur aplikasi berfungsi tanpa koneksi internet, dan tidak ada data yang dikirim keluar dari perangkat saat offline.</p>
       </div>
 
       <div class="privacy-section">
-        <h2>9. Perubahan Kebijakan Privasi</h2>
+        <h2>10. Perubahan Kebijakan Privasi</h2>
         <p>Kami dapat memperbarui Kebijakan Privasi ini dari waktu ke waktu. Setiap perubahan akan ditampilkan di halaman ini beserta tanggal pembaruan terbaru. Kami menyarankan Anda untuk meninjau halaman ini secara berkala.</p>
       </div>
 
       <div class="privacy-section">
-        <h2>10. Kontak</h2>
+        <h2>11. Kontak</h2>
         <p>Jika Anda memiliki pertanyaan, keluhan, atau masukan terkait Kebijakan Privasi ini, Anda dapat menghubungi kami melalui:</p>
         <ul>
           <li>Email: <a href="mailto:dimasqpr23@gmail.com">dimasqpr23@gmail.com</a></li>
           <li>GitHub: <a href="https://github.com/kurnya/CatatKas" target="_blank" rel="noopener">github.com/kurnya/CatatKas</a></li>
         </ul>
-      </section>
+      </div>
       <p style="margin-top:24px;font-size:0.9rem">
         <a href="terms-of-service.html">Syarat & Ketentuan</a> · <a href="index.html">← Kembali ke Aplikasi</a>
       </p>
