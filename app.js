@@ -138,6 +138,8 @@ const elements = {
   updateCard: document.querySelector(".update-card"),
   // Google Sheets Sync
   syncStatusBadge: document.querySelector("#syncStatusBadge"),
+  syncUserRow: document.querySelector("#syncUserRow"),
+  syncUserEmail: document.querySelector("#syncUserEmail"),
   syncInfoBlock: document.querySelector("#syncInfoBlock"),
   syncLastTime: document.querySelector("#syncLastTime"),
   syncSheetLink: document.querySelector("#syncSheetLink"),
@@ -432,6 +434,15 @@ function _renderSyncUI() {
     elements.syncPullButton.hidden = false;
     elements.syncSignOutButton.hidden = false;
 
+    // Show user email if available
+    const email = typeof getUserEmail === "function" ? getUserEmail() : null;
+    if (email) {
+      elements.syncUserEmail.textContent = email;
+      elements.syncUserRow.hidden = false;
+    } else {
+      elements.syncUserRow.hidden = true;
+    }
+
     const sheetUrl = typeof getSpreadsheetUrl === "function" ? getSpreadsheetUrl() : null;
     const lastSync = typeof getLastSyncTime === "function" ? getLastSyncTime() : null;
 
@@ -461,6 +472,7 @@ function _renderSyncUI() {
     elements.syncSignOutButton.hidden = true;
     elements.syncInfoBlock.hidden = true;
     elements.syncSheetLink.hidden = true;
+    elements.syncUserRow.hidden = true;
   }
 
   if (typeof getAutoSyncInterval === "function") {
@@ -700,7 +712,14 @@ function showHelpModal() {
     onClick: () => openSettingsSection(elements.updateCard)
   });
 
-  content.append(downloadCard, updateCard);
+  const syncCard = createHelpGuideCard({
+    title: "Sinkronisasi Google",
+    text: "Hubungkan akun Google untuk menyimpan data ke Spreadsheet pribadi. Token disimpan di perangkat dan diperbarui secara otomatis. Akun tetap terhubung sampai Anda memutuskan sendiri melalui tombol Putuskan Akun.",
+    buttonText: "Buka Sinkronisasi",
+    onClick: () => openSettingsSection(document.querySelector(".sync-card"))
+  });
+
+  content.append(downloadCard, updateCard, syncCard);
 
   showConfirmModal({
     title: "Bantuan CatatKas",

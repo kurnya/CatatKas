@@ -7,7 +7,7 @@
 // ── CONFIG ────────────────────────────────────
 // Replace this with your own OAuth 2.0 Client ID from Google Cloud Console
 const GOOGLE_CLIENT_ID = "591977207769-epc99j316gtokb9g8bqatjvk3acepg5h.apps.googleusercontent.com";
-const SCOPES = "https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive.file";
+const SCOPES = "https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/userinfo.email";
 const SHEETS_API = "https://sheets.googleapis.com/v4/spreadsheets";
 const DRIVE_API = "https://www.googleapis.com/drive/v3/files";
 const SPREADSHEET_NAME = "CatatKas – Data Keuangan";
@@ -18,6 +18,7 @@ const SYNC_TOKEN_KEY = "catatkas_sync_token";
 let _tokenClient = null;
 let _accessToken = null;
 let _tokenExpiry = 0;
+let _userEmail = null;
 let _spreadsheetId = null;
 let _syncInProgress = false;
 let _autoSyncInterval = "off";
@@ -48,6 +49,7 @@ function initGoogleSync(callbacks) {
     if (saved.token) {
       _accessToken = saved.token;
       _tokenExpiry = saved.expiry || 0;
+      _userEmail = saved.email || null;
     }
   } catch { /* ignore */ }
 
@@ -76,6 +78,10 @@ function isSignedIn() {
 
 function _isTokenValid() {
   return _accessToken && Date.now() < _tokenExpiry;
+}
+
+function getUserEmail() {
+  return _userEmail;
 }
 
 function getSpreadsheetUrl() {
@@ -143,6 +149,7 @@ function signOut() {
   }
   _accessToken = null;
   _tokenExpiry = 0;
+  _userEmail = null;
   _spreadsheetId = null;
   _lastSyncTime = null;
   _autoSyncInterval = "off";
@@ -251,16 +258,42 @@ function _handleTokenResponse(response) {
   _tokenExpiry = Date.now() + ((response.expires_in || 3600) - 300) * 1000;
 
   // Persist token so it survives hard refresh
-  localStorage.setItem(SYNC_TOKEN_KEY, JSON.stringify({
-    token: _accessToken,
-    expiry: _tokenExpiry
-  }));
+  _persistToken();
 
   _onAuthChange?.(true);
+
+  // Fetch user email in background
+  _fetchUserEmail();
 
   // Start auto-sync if enabled
   if (_autoSyncInterval !== "off") {
     setAutoSyncInterval(_autoSyncInterval);
+  }
+}
+
+function _persistToken() {
+  localStorage.setItem(SYNC_TOKEN_KEY, JSON.stringify({
+    token: _accessToken,
+    expiry: _tokenExpiry,
+    email: _userEmail
+  }));
+}
+
+async function _fetchUserEmail() {
+  try {
+    const res = await fetch("https://www.googleapis.com/oauth2/v2/userinfo", {
+      headers: { Authorization: `Bearer ${_accessToken}` }
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (data.email) {
+        _userEmail = data.email;
+        _persistToken();
+        _onAuthChange?.(true); // Re-trigger UI update with email
+      }
+    }
+  } catch (e) {
+    console.warn("[Sync] Failed to fetch user email:", e);
   }
 }
 
@@ -288,9 +321,9 @@ function _trySilentRefresh() {
           } else {
             _accessToken = response.access_token;
             _tokenExpiry = Date.now() + ((response.expires_in || 3600) - 300) * 1000;
-            localStorage.setItem(SYNC_TOKEN_KEY, JSON.stringify({
-              token: _accessToken, expiry: _tokenExpiry
-            }));
+            _persistToken();
+            // Fetch email if not already known
+            if (!_userEmail) _fetchUserEmail();
             resolve();
           }
         },

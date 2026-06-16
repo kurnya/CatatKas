@@ -1050,6 +1050,26 @@ select:focus {
   font-size: 0.875rem;
 }
 
+.sync-user-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.82rem;
+  color: var(--muted, #64748b);
+  margin-top: -4px;
+}
+
+.sync-user-row svg {
+  flex-shrink: 0;
+  opacity: 0.7;
+}
+
+.sync-user-row span {
+  font-weight: 600;
+  color: var(--text);
+  word-break: break-all;
+}
+
 .sync-badge {
   display: inline-block;
   padding: 3px 10px;
@@ -1387,6 +1407,24 @@ select:focus {
 .help-guide-list {
   display: grid;
   gap: 10px;
+  max-height: 50vh;
+  overflow-y: auto;
+  padding-right: 4px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--line, #e2e8f0) transparent;
+}
+
+.help-guide-list::-webkit-scrollbar {
+  width: 5px;
+}
+
+.help-guide-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.help-guide-list::-webkit-scrollbar-thumb {
+  background: var(--line, #e2e8f0);
+  border-radius: 999px;
 }
 
 .help-guide-card {
