@@ -43,18 +43,38 @@ function initGoogleSync(callbacks) {
     _lastSyncTime = meta.lastSyncTime || null;
     _autoSyncInterval = meta.autoSyncInterval || "off";
 
-    // Restore token (survives hard refresh)
+    // Restore token (survives hard refresh) — restore even if expired
     const saved = JSON.parse(localStorage.getItem(SYNC_TOKEN_KEY) || "{}");
-    if (saved.token && saved.expiry && Date.now() < saved.expiry) {
+    if (saved.token) {
       _accessToken = saved.token;
-      _tokenExpiry = saved.expiry;
+      _tokenExpiry = saved.expiry || 0;
     }
   } catch { /* ignore */ }
+
+  // If we have a saved token, consider user signed in (even if expired)
+  // Token will be silently refreshed when needed
+  if (_accessToken) {
+    _onAuthChange?.(true);
+    // Try silent refresh in background if token expired
+    if (Date.now() >= _tokenExpiry) {
+      _trySilentRefresh().catch(() => {
+        // Refresh failed but don't clear token — might be network issue
+        // Will retry on next sync attempt
+        console.warn("[Sync] Token refresh failed, will retry on next sync");
+      });
+    }
+    if (_autoSyncInterval !== "off") setAutoSyncInterval(_autoSyncInterval);
+  }
 
   _initGoogleIdentityServices();
 }
 
 function isSignedIn() {
+  // Return true if we have any token (even expired) — it can likely be refreshed silently
+  return !!_accessToken;
+}
+
+function _isTokenValid() {
   return _accessToken && Date.now() < _tokenExpiry;
 }
 
@@ -246,31 +266,42 @@ function _handleTokenResponse(response) {
 
 async function _ensureValidToken() {
   if (Date.now() >= _tokenExpiry) {
-    // Token expired, re-request silently
-    return new Promise((resolve, reject) => {
-      if (!_tokenClient) {
-        _tokenClient = google.accounts.oauth2.initTokenClient({
-          client_id: GOOGLE_CLIENT_ID,
-          scope: SCOPES,
-          callback: (response) => {
-            if (response.error) {
-              reject(new Error("Token refresh failed"));
-            } else {
-              _accessToken = response.access_token;
-              _tokenExpiry = Date.now() + ((response.expires_in || 3600) - 300) * 1000;
-              // Persist refreshed token
-              localStorage.setItem(SYNC_TOKEN_KEY, JSON.stringify({
-                token: _accessToken, expiry: _tokenExpiry
-              }));
-              resolve();
-            }
-          },
-          error_callback: () => reject(new Error("Token refresh failed"))
-        });
-      }
-      _tokenClient.requestAccessToken({ prompt: "" }); // silent
-    });
+    return _trySilentRefresh();
   }
+}
+
+function _trySilentRefresh() {
+  return new Promise((resolve, reject) => {
+    if (!window.google?.accounts?.oauth2) {
+      reject(new Error("Google Identity Services not available"));
+      return;
+    }
+    if (!_tokenClient) {
+      _tokenClient = google.accounts.oauth2.initTokenClient({
+        client_id: GOOGLE_CLIENT_ID,
+        scope: SCOPES,
+        callback: (response) => {
+          if (response.error) {
+            // Don't clear token — might be temporary (network/service issue)
+            // User stays "connected" and will retry on next sync
+            reject(new Error("Token refresh failed: " + response.error));
+          } else {
+            _accessToken = response.access_token;
+            _tokenExpiry = Date.now() + ((response.expires_in || 3600) - 300) * 1000;
+            localStorage.setItem(SYNC_TOKEN_KEY, JSON.stringify({
+              token: _accessToken, expiry: _tokenExpiry
+            }));
+            resolve();
+          }
+        },
+        error_callback: (err) => {
+          // Don't clear token — might be temporary
+          reject(new Error("Token refresh failed: " + (err?.message || "unknown")));
+        }
+      });
+    }
+    _tokenClient.requestAccessToken({ prompt: "" }); // silent
+  });
 }
 
 // ── INTERNAL: Spreadsheet Management ──────────
