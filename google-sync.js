@@ -13,6 +13,7 @@ const DRIVE_API = "https://www.googleapis.com/drive/v3/files";
 const SPREADSHEET_NAME = "CatatKas – Data Keuangan";
 const SYNC_META_KEY = "catatkas_sync_meta";
 const SYNC_TOKEN_KEY = "catatkas_sync_token";
+const TOKEN_REFRESH_ERROR_MESSAGE = "Sesi Google perlu diperbarui. Tekan Masuk dengan Google untuk menyambungkan ulang.";
 
 // ── STATE ─────────────────────────────────────
 let _tokenClient = null;
@@ -130,17 +131,15 @@ function signIn() {
     return;
   }
   if (!_tokenClient) {
-    _tokenClient = google.accounts.oauth2.initTokenClient({
-      client_id: GOOGLE_CLIENT_ID,
-      scope: SCOPES,
-      callback: (response) => _handleTokenResponse(response),
-      error_callback: (err) => {
+    _tokenClient = _createTokenClient(
+      (response) => _handleTokenResponse(response),
+      (err) => {
         console.error("[Sync] Auth error:", err);
         _onSyncComplete?.("auth", false, "Gagal masuk ke akun Google. Silakan coba lagi.");
       }
-    });
+    );
   }
-  _tokenClient.requestAccessToken({ prompt: "consent" });
+  _tokenClient.requestAccessToken({ prompt: "" });
 }
 
 function signOut() {
@@ -182,7 +181,10 @@ async function pushToSheets(appState, silent = false) {
   } catch (err) {
     console.error("[Sync] Push error:", err);
     if (!silent) {
-      const msg = err?.message || "Gagal menyimpan data ke Google Spreadsheet.";
+      if (_isAuthRefreshError(err)) _markTokenRefreshRequired();
+      const msg = _isAuthRefreshError(err)
+        ? TOKEN_REFRESH_ERROR_MESSAGE
+        : err?.message || "Gagal menyimpan data ke Google Spreadsheet.";
       _onSyncComplete?.("push", false, msg);
     }
     return false;
@@ -216,7 +218,10 @@ async function pullFromSheets() {
     return { transactions, subCategories, paymentMethods };
   } catch (err) {
     console.error("[Sync] Pull error:", err);
-    const msg = err?.message || "Gagal memuat data dari Google Spreadsheet.";
+    if (_isAuthRefreshError(err)) _markTokenRefreshRequired();
+    const msg = _isAuthRefreshError(err)
+      ? TOKEN_REFRESH_ERROR_MESSAGE
+      : err?.message || "Gagal memuat data dari Google Spreadsheet.";
     _onSyncComplete?.("pull", false, msg);
     return null;
   } finally {
@@ -230,14 +235,12 @@ async function pullFromSheets() {
 function _initGoogleIdentityServices() {
   // Wait for GIS script to load
   if (window.google?.accounts?.oauth2) {
-    _tokenClient = google.accounts.oauth2.initTokenClient({
-      client_id: GOOGLE_CLIENT_ID,
-      scope: SCOPES,
-      callback: (response) => _handleTokenResponse(response),
-      error_callback: (err) => {
+    _tokenClient = _createTokenClient(
+      (response) => _handleTokenResponse(response),
+      (err) => {
         console.error("[Sync] Auth error:", err);
       }
-    });
+    );
     // Auto-restore if we had a spreadsheet
     if (_spreadsheetId) {
       _onAuthChange?.(true);
@@ -246,6 +249,17 @@ function _initGoogleIdentityServices() {
   }
   // Retry after a short delay if GIS hasn't loaded yet
   setTimeout(() => _initGoogleIdentityServices(), 500);
+}
+
+function _createTokenClient(callback, error_callback) {
+  const config = {
+    client_id: GOOGLE_CLIENT_ID,
+    scope: SCOPES,
+    callback,
+    error_callback
+  };
+  if (_userEmail) config.login_hint = _userEmail;
+  return google.accounts.oauth2.initTokenClient(config);
 }
 
 function _handleTokenResponse(response) {
@@ -312,10 +326,8 @@ function _trySilentRefresh() {
     // Always create a dedicated token client for silent refresh.
     // Reusing _tokenClient would fire its original callback (_handleTokenResponse)
     // instead of resolving this Promise, causing the sync to hang.
-    const refreshClient = google.accounts.oauth2.initTokenClient({
-      client_id: GOOGLE_CLIENT_ID,
-      scope: SCOPES,
-      callback: (response) => {
+    const refreshClient = _createTokenClient(
+      (response) => {
         if (response.error) {
           // Don't clear token — might be temporary (network/service issue)
           // User stays "connected" and will retry on next sync
@@ -329,13 +341,24 @@ function _trySilentRefresh() {
           resolve();
         }
       },
-      error_callback: (err) => {
+      (err) => {
         // Don't clear token — might be temporary
         reject(new Error("Token refresh failed: " + (err?.message || "unknown")));
       }
-    });
-    refreshClient.requestAccessToken({ prompt: "" }); // silent
+    );
+    refreshClient.requestAccessToken({ prompt: "none" }); // silent, never show account/consent UI
   });
+}
+
+function _isAuthRefreshError(err) {
+  return (err?.message || "").startsWith("Token refresh failed:");
+}
+
+function _markTokenRefreshRequired() {
+  _accessToken = null;
+  _tokenExpiry = 0;
+  localStorage.removeItem(SYNC_TOKEN_KEY);
+  _onAuthChange?.(false);
 }
 
 // ── INTERNAL: Spreadsheet Management ──────────
