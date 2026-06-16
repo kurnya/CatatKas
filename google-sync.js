@@ -105,6 +105,7 @@ function getAutoSyncInterval() {
 
 const INTERVAL_MS = {
   "off": 0,
+  "3h":  3 * 60 * 60 * 1000,
   "6h":  6 * 60 * 60 * 1000,
   "12h": 12 * 60 * 60 * 1000,
   "24h": 24 * 60 * 60 * 1000,
