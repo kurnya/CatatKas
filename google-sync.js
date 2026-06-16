@@ -25,6 +25,7 @@ let _syncInProgress = false;
 let _autoSyncInterval = "off";
 let _autoSyncTimer = null;
 let _lastSyncTime = null;
+let _lastPushTime = null;
 
 // ── CALLBACKS (set by app.js) ─────────────────
 let _onSyncStateChange = null;   // (isSyncing: bool) => void
@@ -43,6 +44,7 @@ function initGoogleSync(callbacks) {
     const meta = JSON.parse(localStorage.getItem(SYNC_META_KEY) || "{}");
     _spreadsheetId = meta.spreadsheetId || null;
     _lastSyncTime = meta.lastSyncTime || null;
+    _lastPushTime = meta.lastPushTime || meta.lastSyncTime || null;
     _autoSyncInterval = meta.autoSyncInterval || "off";
 
     // Restore token (survives hard refresh) — restore even if expired
@@ -113,16 +115,7 @@ const INTERVAL_MS = {
 function setAutoSyncInterval(interval) {
   _autoSyncInterval = interval;
   _saveSyncMeta();
-  if (_autoSyncTimer) {
-    clearInterval(_autoSyncTimer);
-    _autoSyncTimer = null;
-  }
-  const ms = INTERVAL_MS[interval] || 0;
-  if (ms > 0 && isSignedIn()) {
-    // Push immediately on enable, then every interval
-    _triggerAutoSync();
-    _autoSyncTimer = setInterval(() => _triggerAutoSync(), ms);
-  }
+  _scheduleAutoSync();
 }
 
 function signIn() {
@@ -151,6 +144,7 @@ function signOut() {
   _userEmail = null;
   _spreadsheetId = null;
   _lastSyncTime = null;
+  _lastPushTime = null;
   _autoSyncInterval = "off";
   localStorage.removeItem(SYNC_META_KEY);
   localStorage.removeItem(SYNC_TOKEN_KEY);
@@ -174,8 +168,11 @@ async function pushToSheets(appState, silent = false) {
     await _writePaymentMethods(appState.paymentMethods || []);
     await _writeMetadata(appState);
 
-    _lastSyncTime = new Date().toISOString();
+    const syncedAt = new Date().toISOString();
+    _lastSyncTime = syncedAt;
+    _lastPushTime = syncedAt;
     _saveSyncMeta();
+    _scheduleAutoSync();
     if (!silent) _onSyncComplete?.("push", true, "Data berhasil disimpan ke Google Spreadsheet.");
     return true;
   } catch (err) {
@@ -190,6 +187,7 @@ async function pushToSheets(appState, silent = false) {
     return false;
   } finally {
     _syncInProgress = false;
+    if (silent) _scheduleAutoSyncRetry();
     if (!silent) _onSyncStateChange?.(false);
   }
 }
@@ -358,6 +356,7 @@ function _markTokenRefreshRequired() {
   _accessToken = null;
   _tokenExpiry = 0;
   localStorage.removeItem(SYNC_TOKEN_KEY);
+  _clearAutoSyncTimer();
   _onAuthChange?.(false);
 }
 
@@ -367,6 +366,7 @@ function _saveSyncMeta() {
   localStorage.setItem(SYNC_META_KEY, JSON.stringify({
     spreadsheetId: _spreadsheetId,
     lastSyncTime: _lastSyncTime,
+    lastPushTime: _lastPushTime,
     autoSyncInterval: _autoSyncInterval
   }));
 }
@@ -548,6 +548,37 @@ async function _readPaymentMethods() {
 
 // ── INTERNAL: Auto-sync ───────────────────────
 
+function _clearAutoSyncTimer() {
+  if (_autoSyncTimer) {
+    clearTimeout(_autoSyncTimer);
+    _autoSyncTimer = null;
+  }
+}
+
+function _scheduleAutoSync() {
+  _clearAutoSyncTimer();
+  const ms = INTERVAL_MS[_autoSyncInterval] || 0;
+  if (ms <= 0 || !isSignedIn()) return;
+
+  const lastPushMs = Date.parse(_lastPushTime || "");
+  const elapsed = Number.isFinite(lastPushMs) ? Date.now() - lastPushMs : ms;
+  const delay = Math.max(ms - elapsed, 0);
+
+  _autoSyncTimer = setTimeout(() => {
+    _autoSyncTimer = null;
+    _triggerAutoSync();
+  }, delay);
+}
+
+function _scheduleAutoSyncRetry() {
+  const ms = INTERVAL_MS[_autoSyncInterval] || 0;
+  if (ms <= 0 || !isSignedIn() || _autoSyncTimer) return;
+  _autoSyncTimer = setTimeout(() => {
+    _autoSyncTimer = null;
+    _triggerAutoSync();
+  }, ms);
+}
+
 function _triggerAutoSync() {
   if (!isSignedIn() || _syncInProgress) return;
   if (typeof _onAutoSyncNeeded === "function") _onAutoSyncNeeded();
@@ -557,4 +588,5 @@ let _onAutoSyncNeeded = null;
 
 function setAutoSyncCallback(fn) {
   _onAutoSyncNeeded = fn;
+  _scheduleAutoSync();
 }
