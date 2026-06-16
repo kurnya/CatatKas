@@ -309,31 +309,32 @@ function _trySilentRefresh() {
       reject(new Error("Google Identity Services not available"));
       return;
     }
-    if (!_tokenClient) {
-      _tokenClient = google.accounts.oauth2.initTokenClient({
-        client_id: GOOGLE_CLIENT_ID,
-        scope: SCOPES,
-        callback: (response) => {
-          if (response.error) {
-            // Don't clear token — might be temporary (network/service issue)
-            // User stays "connected" and will retry on next sync
-            reject(new Error("Token refresh failed: " + response.error));
-          } else {
-            _accessToken = response.access_token;
-            _tokenExpiry = Date.now() + ((response.expires_in || 3600) - 300) * 1000;
-            _persistToken();
-            // Fetch email if not already known
-            if (!_userEmail) _fetchUserEmail();
-            resolve();
-          }
-        },
-        error_callback: (err) => {
-          // Don't clear token — might be temporary
-          reject(new Error("Token refresh failed: " + (err?.message || "unknown")));
+    // Always create a dedicated token client for silent refresh.
+    // Reusing _tokenClient would fire its original callback (_handleTokenResponse)
+    // instead of resolving this Promise, causing the sync to hang.
+    const refreshClient = google.accounts.oauth2.initTokenClient({
+      client_id: GOOGLE_CLIENT_ID,
+      scope: SCOPES,
+      callback: (response) => {
+        if (response.error) {
+          // Don't clear token — might be temporary (network/service issue)
+          // User stays "connected" and will retry on next sync
+          reject(new Error("Token refresh failed: " + response.error));
+        } else {
+          _accessToken = response.access_token;
+          _tokenExpiry = Date.now() + ((response.expires_in || 3600) - 300) * 1000;
+          _persistToken();
+          // Fetch email if not already known
+          if (!_userEmail) _fetchUserEmail();
+          resolve();
         }
-      });
-    }
-    _tokenClient.requestAccessToken({ prompt: "" }); // silent
+      },
+      error_callback: (err) => {
+        // Don't clear token — might be temporary
+        reject(new Error("Token refresh failed: " + (err?.message || "unknown")));
+      }
+    });
+    refreshClient.requestAccessToken({ prompt: "" }); // silent
   });
 }
 
