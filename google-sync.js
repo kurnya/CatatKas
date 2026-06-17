@@ -27,6 +27,7 @@ let _autoSyncTimer = null;
 let _lastSyncTime = null;
 let _lastPushTime = null;
 let _lastSyncedTransactionIds = new Set(); // Track which transactions were last synced
+let _discoveryPromise = null; // Lock to prevent concurrent discovery calls
 
 // ── CALLBACKS (set by app.js) ─────────────────
 let _onSyncStateChange = null;   // (isSyncing: bool) => void
@@ -71,11 +72,23 @@ function initGoogleSync(callbacks) {
     _onAuthChange?.(true);
     // Try silent refresh in background if token expired
     if (Date.now() >= _tokenExpiry) {
-      _trySilentRefresh().catch(() => {
-        // Refresh failed but don't clear token — might be network issue
-        // Will retry on next sync attempt
-        console.warn("[Sync] Token refresh failed, will retry on next sync");
-      });
+      _trySilentRefresh()
+        .then(() => {
+          // After refresh, trigger discovery if no spreadsheet ID (new device with restored token)
+          if (!_spreadsheetId) {
+            console.log("[Sync] Token refreshed, no spreadsheet ID — triggering background discovery...");
+            _discoverExistingSpreadsheet();
+          }
+        })
+        .catch(() => {
+          // Refresh failed but don't clear token — might be network issue
+          // Will retry on next sync attempt
+          console.warn("[Sync] Token refresh failed, will retry on next sync");
+        });
+    } else if (!_spreadsheetId) {
+      // Token still valid but no spreadsheet ID (e.g. new device with restored token)
+      console.log("[Sync] Restored token valid, no spreadsheet ID — triggering background discovery...");
+      _discoverExistingSpreadsheet();
     }
     if (_autoSyncInterval !== "off") setAutoSyncInterval(_autoSyncInterval);
   }
@@ -247,14 +260,92 @@ async function pushToSheets(appState, silent = false) {
   }
 }
 
+// Ensure spreadsheet is discovered before operations that require it.
+// Uses a promise lock to prevent concurrent discovery calls.
+async function _ensureSpreadsheetDiscovered() {
+  if (_spreadsheetId) return true;
+  if (!isSignedIn()) return false;
+
+  // Reuse in-flight discovery if already running
+  if (_discoveryPromise) {
+    await _discoveryPromise;
+    return !!_spreadsheetId;
+  }
+
+  try {
+    await _ensureValidToken();
+  } catch {
+    return false;
+  }
+
+  _discoveryPromise = (async () => {
+    try {
+      console.log("[Discover] Searching for CatatKas spreadsheet in Google Drive...");
+
+      const query = encodeURIComponent(`mimeType='application/vnd.google-apps.spreadsheet' and name='${SPREADSHEET_NAME}' and trashed=false`);
+      const url = `${DRIVE_API}/files?q=${query}&fields=files(id,name,createdTime,modifiedTime)&orderBy=modifiedTime desc&pageSize=5`;
+
+      const res = await fetch(url, {
+        headers: { Authorization: `Bearer ${_accessToken}` }
+      });
+
+      if (!res.ok) {
+        console.warn("[Discover] Failed to search Drive:", res.status);
+        return;
+      }
+
+      const data = await res.json();
+      const files = data.files || [];
+
+      if (files.length === 0) {
+        console.log("[Discover] No existing CatatKas spreadsheet found.");
+        return;
+      }
+
+      const spreadsheet = files[0];
+      _spreadsheetId = spreadsheet.id;
+      _saveSyncMeta();
+
+      console.log(`[Discover] Found existing spreadsheet: ${spreadsheet.name} (${spreadsheet.id})`);
+      _onAuthChange?.(true);
+    } catch (err) {
+      console.warn("[Discover] Error searching for spreadsheet:", err);
+    }
+  })();
+
+  await _discoveryPromise;
+  _discoveryPromise = null;
+  return !!_spreadsheetId;
+}
+
 async function pullFromSheets() {
   if (!isSignedIn()) {
     _onSyncComplete?.("pull", false, "Anda belum masuk ke akun Google.");
     return null;
   }
   if (_syncInProgress) return null;
+
+  // Auto-discover spreadsheet if not yet known (e.g. new device)
   if (!_spreadsheetId) {
-    _onSyncComplete?.("pull", false, "Belum ada Spreadsheet terhubung. Kirim data terlebih dahulu.");
+    console.log("[Sync] No spreadsheet ID, attempting discovery before pull...");
+    _syncInProgress = true;
+    _onSyncStateChange?.(true);
+    try {
+      const found = await _ensureSpreadsheetDiscovered();
+      if (!found) {
+        _onSyncComplete?.("pull", false, "Belum ada Spreadsheet terhubung. Kirim data terlebih dahulu.");
+        return null;
+      }
+      // Auto-pull data from the newly discovered spreadsheet
+      await _autoPullFromDiscoveredSpreadsheet();
+      _onSyncComplete?.("pull", true, "Spreadsheet ditemukan dan data berhasil dimuat.");
+    } catch (err) {
+      console.error("[Sync] Discovery/pull error:", err);
+      _onSyncComplete?.("pull", false, "Gagal memuat data dari Spreadsheet.");
+    } finally {
+      _syncInProgress = false;
+      _onSyncStateChange?.(false);
+    }
     return null;
   }
   _syncInProgress = true;
@@ -373,51 +464,19 @@ async function _fetchUserEmail() {
   }
 }
 
-// Auto-discover existing CatatKas spreadsheet using Drive API
+// Auto-discover existing CatatKas spreadsheet using Drive API.
+// Delegates to _ensureSpreadsheetDiscovered (shared lock) and auto-pulls if found.
 async function _discoverExistingSpreadsheet() {
   try {
-    await _ensureValidToken();
-    
-    console.log("[Discover] Searching for CatatKas spreadsheet in Google Drive...");
-    
-    // Search for spreadsheet with exact name
-    const query = encodeURIComponent(`mimeType='application/vnd.google-apps.spreadsheet' and name='${SPREADSHEET_NAME}' and trashed=false`);
-    const url = `${DRIVE_API}/files?q=${query}&fields=files(id,name,createdTime,modifiedTime)&orderBy=modifiedTime desc&pageSize=5`;
-    
-    const res = await fetch(url, {
-      headers: { Authorization: `Bearer ${_accessToken}` }
-    });
-    
-    if (!res.ok) {
-      console.warn("[Discover] Failed to search Drive:", res.status);
-      return;
-    }
-    
-    const data = await res.json();
-    const files = data.files || [];
-    
-    if (files.length === 0) {
+    const found = await _ensureSpreadsheetDiscovered();
+    if (found) {
+      console.log("[Discover] Auto-pulling data from discovered spreadsheet...");
+      _autoPullFromDiscoveredSpreadsheet();
+    } else {
       console.log("[Discover] No existing CatatKas spreadsheet found. Will create new one on first push.");
-      return;
     }
-    
-    // Use the most recently modified spreadsheet
-    const spreadsheet = files[0];
-    _spreadsheetId = spreadsheet.id;
-    _saveSyncMeta();
-    
-    console.log(`[Discover] Found existing spreadsheet: ${spreadsheet.name} (${spreadsheet.id})`);
-    console.log(`[Discover] Last modified: ${spreadsheet.modifiedTime}`);
-    
-    // Notify UI
-    _onAuthChange?.(true);
-    
-    // Auto-pull data from discovered spreadsheet
-    console.log("[Discover] Auto-pulling data from discovered spreadsheet...");
-    _autoPullFromDiscoveredSpreadsheet();
-    
   } catch (err) {
-    console.warn("[Discover] Error searching for spreadsheet:", err);
+    console.warn("[Discover] Error discovering spreadsheet:", err);
   }
 }
 
