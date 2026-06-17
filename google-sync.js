@@ -283,7 +283,7 @@ async function _ensureSpreadsheetDiscovered() {
       console.log("[Discover] Searching for CatatKas spreadsheet in Google Drive...");
 
       const query = encodeURIComponent(`mimeType='application/vnd.google-apps.spreadsheet' and name='${SPREADSHEET_NAME}' and trashed=false`);
-      const url = `${DRIVE_API}/files?q=${query}&fields=files(id,name,createdTime,modifiedTime)&orderBy=modifiedTime desc&pageSize=5`;
+      const url = `${DRIVE_API}?q=${query}&fields=files(id,name,createdTime,modifiedTime)&orderBy=modifiedTime desc&pageSize=5`;
 
       const res = await fetch(url, {
         headers: { Authorization: `Bearer ${_accessToken}` }
