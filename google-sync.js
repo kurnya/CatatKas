@@ -28,6 +28,7 @@ let _lastSyncTime = null;
 let _lastPushTime = null;
 let _lastSyncedTransactionIds = new Set(); // Track which transactions were last synced
 let _discoveryPromise = null; // Lock to prevent concurrent discovery calls
+let _lastKnownSheetModified = null; // Last known spreadsheet modifiedTime from Google server
 
 // ── CALLBACKS (set by app.js) ─────────────────
 let _onSyncStateChange = null;   // (isSyncing: bool) => void
@@ -50,6 +51,7 @@ function initGoogleSync(callbacks) {
     _lastSyncTime = meta.lastSyncTime || null;
     _lastPushTime = meta.lastPushTime || meta.lastSyncTime || null;
     _autoSyncInterval = meta.autoSyncInterval || "off";
+    _lastKnownSheetModified = meta.lastKnownSheetModified || null;
     
     // Restore synced transaction IDs for differential sync
     if (meta.lastSyncedTransactionIds && Array.isArray(meta.lastSyncedTransactionIds)) {
@@ -196,6 +198,10 @@ async function pushToSheets(appState, silent = false) {
     await _ensureValidToken();
     
     await _ensureSpreadsheet();
+
+    // Check for remote changes before pushing (cross-device reconciliation)
+    await _reconcileRemoteChanges(appState);
+
     console.log("[Sync] Writing transactions to spreadsheet...");
     await _writeTransactions(appState.transactions || []);
     console.log("[Sync] Writing sub-categories...");
@@ -208,6 +214,13 @@ async function pushToSheets(appState, silent = false) {
     const syncedAt = new Date().toISOString();
     _lastSyncTime = syncedAt;
     _lastPushTime = syncedAt;
+
+    // Store authoritative sheet modifiedTime from server to avoid false positives
+    try {
+      const meta = await _sheetsRequest(`/${_spreadsheetId}?fields=modifiedTime`);
+      if (meta.modifiedTime) _lastKnownSheetModified = meta.modifiedTime;
+    } catch { /* ignore */ }
+
     _saveSyncMeta();
     _scheduleAutoSync();
     
@@ -360,6 +373,11 @@ async function pullFromSheets() {
     const paymentMethods = await _readPaymentMethods();
 
     _lastSyncTime = new Date().toISOString();
+    // Update sheet modified baseline after pull
+    try {
+      const meta = await _sheetsRequest(`/${_spreadsheetId}?fields=modifiedTime`);
+      if (meta.modifiedTime) _lastKnownSheetModified = meta.modifiedTime;
+    } catch { /* ignore */ }
     _saveSyncMeta();
     _onSyncComplete?.("pull", true, "Data berhasil dimuat dari Google Spreadsheet.");
     return { transactions, subCategories, paymentMethods };
@@ -548,6 +566,61 @@ async function _autoPullFromDiscoveredSpreadsheet() {
   }
 }
 
+// Get the spreadsheet's last modified time from Google server
+async function _getSheetModifiedTime() {
+  try {
+    const meta = await _sheetsRequest(`/${_spreadsheetId}?fields=modifiedTime`);
+    return meta.modifiedTime || null;
+  } catch {
+    return null;
+  }
+}
+
+// Check if another device modified the spreadsheet since our last sync.
+// If so, pull remote changes and merge before pushing local changes.
+async function _reconcileRemoteChanges(appState) {
+  if (!_spreadsheetId || !_onDataMerge) return;
+
+  const sheetModified = await _getSheetModifiedTime();
+  if (!sheetModified) return;
+
+  // Compare against last known sheet modified time (authoritative, from server)
+  const baseline = _lastKnownSheetModified || _lastSyncTime;
+  if (baseline && sheetModified <= baseline) {
+    console.log("[Sync] No remote changes detected");
+    return;
+  }
+
+  console.log(`[Sync] Remote changes detected (sheet: ${sheetModified}, baseline: ${baseline}), pulling before push...`);
+
+  try {
+    const transactions = await _readTransactions();
+    const subCategories = await _readSubCategories();
+    const paymentMethods = await _readPaymentMethods();
+
+    if (transactions && transactions.length > 0) {
+      _onDataMerge({ transactions, subCategories, paymentMethods });
+      _lastSyncedTransactionIds = new Set(transactions.map(tx => tx.id));
+      try {
+        const localState = JSON.parse(localStorage.getItem("catatan_keuangan_pwa_v1") || "{}");
+        if (localState.transactions && Array.isArray(localState.transactions)) {
+          for (const tx of localState.transactions) {
+            if (tx.id) _lastSyncedTransactionIds.add(tx.id);
+          }
+        }
+      } catch { /* ignore */ }
+    }
+
+    // Update baseline to the sheet's authoritative modified time
+    _lastKnownSheetModified = sheetModified;
+    _lastSyncTime = new Date().toISOString();
+    _saveSyncMeta();
+    console.log("[Sync] Remote changes reconciled successfully");
+  } catch (err) {
+    console.warn("[Sync] Reconciliation failed, proceeding with push:", err);
+  }
+}
+
 async function _ensureValidToken() {
   if (Date.now() >= _tokenExpiry) {
     return _trySilentRefresh();
@@ -607,7 +680,8 @@ function _saveSyncMeta() {
     lastSyncTime: _lastSyncTime,
     lastPushTime: _lastPushTime,
     autoSyncInterval: _autoSyncInterval,
-    lastSyncedTransactionIds: [..._lastSyncedTransactionIds] // Persist synced IDs
+    lastSyncedTransactionIds: [..._lastSyncedTransactionIds],
+    lastKnownSheetModified: _lastKnownSheetModified
   }));
 }
 
