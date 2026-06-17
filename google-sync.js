@@ -515,7 +515,13 @@ async function _autoPullFromDiscoveredSpreadsheet() {
       console.log("[Auto-Pull] Triggering data merge callback...");
       _onDataMerge({ transactions, subCategories, paymentMethods });
     }
-    
+
+    // Update synced transaction IDs so subsequent pushes use differential sync
+    if (transactions && transactions.length > 0) {
+      _lastSyncedTransactionIds = new Set(transactions.map(tx => tx.id));
+      console.log(`[Auto-Pull] Tracked ${_lastSyncedTransactionIds.size} synced transaction IDs`);
+    }
+
     _lastSyncTime = new Date().toISOString();
     _saveSyncMeta();
     
@@ -732,11 +738,19 @@ async function _fullWriteTransactions(transactions) {
   ]);
 
   console.log(`[Write] Full rewrite: ${rows.length} rows`);
-  
-  await _sheetsRequest(`/${_spreadsheetId}/values/Transaksi!A2:I?valueInputOption=RAW`, {
-    method: "PUT",
-    body: JSON.stringify({ values: rows.length ? rows : [[]] })
+
+  // Clear entire range first to ensure stale rows are removed
+  await _sheetsRequest(`/${_spreadsheetId}/values:batchClear`, {
+    method: "POST",
+    body: JSON.stringify({ ranges: ["Transaksi!A2:I"] })
   });
+
+  if (rows.length > 0) {
+    await _sheetsRequest(`/${_spreadsheetId}/values/Transaksi!A2:I?valueInputOption=RAW`, {
+      method: "PUT",
+      body: JSON.stringify({ values: rows })
+    });
+  }
 }
 
 // Batch update/insert transactions
@@ -809,63 +823,56 @@ async function _batchUpdateTransactions(transactions) {
   }
 }
 
-// Batch delete transactions by ID
+// Batch delete transactions by ID using deleteDimension (efficient — no full rewrite)
 async function _batchDeleteTransactions(idsToDelete) {
   if (idsToDelete.length === 0) return;
-  
+
   console.log(`[Write] Deleting ${idsToDelete.length} transactions:`, idsToDelete);
-  
-  // Read all data
+
+  // Read only column A (IDs) to find row positions — minimal data transfer
   const result = await _sheetsRequest(
-    `/${_spreadsheetId}/values/Transaksi!A2:I?majorDimension=ROWS`
+    `/${_spreadsheetId}/values/Transaksi!A2:A?majorDimension=ROWS`
   );
   const rows = result.values || [];
-  
-  console.log(`[Write] Read ${rows.length} rows from spreadsheet`);
-  if (rows.length > 0) {
-    console.log(`[Write] Sample row IDs:`, rows.filter(r => r[0]).slice(0, 3).map(r => r[0]));
-  }
-  
-  // Filter out deleted rows (only keep rows with valid IDs that are not in delete list)
+
+  // Map each ID to its 0-based sheet row index (row 2 in sheet = index 1)
   const deleteSet = new Set(idsToDelete);
-  const filteredRows = rows.filter(row => {
-    // Skip empty rows
-    if (!row || !row[0]) {
-      console.log("[Write] Skipping empty row");
-      return false;
+  const sheetIndicesToDelete = [];
+
+  rows.forEach((row, i) => {
+    if (row && row[0] && deleteSet.has(row[0])) {
+      sheetIndicesToDelete.push(i + 1); // +1 because data starts at sheet row 2 (0-based index 1)
     }
-    
-    const shouldKeep = !deleteSet.has(row[0]);
-    if (!shouldKeep) {
-      console.log(`[Write] Removing row with ID: ${row[0]}`);
-    }
-    return shouldKeep;
   });
-  
-  console.log(`[Write] After filtering: ${filteredRows.length} rows remain`);
-  
-  // Use batchClear to remove all data first
-  await _sheetsRequest(`/${_spreadsheetId}/values:batchClear`, {
-    method: "POST",
-    body: JSON.stringify({
-      ranges: [`Transaksi!A2:I`]
-    })
-  });
-  
-  console.log("[Write] Cleared old data using batchClear");
-  
-  // Write filtered data
-  if (filteredRows.length > 0) {
-    await _sheetsRequest(`/${_spreadsheetId}/values/Transaksi!A2:I?valueInputOption=RAW`, {
-      method: "PUT",
-      body: JSON.stringify({ values: filteredRows })
-    });
-    console.log(`[Write] Wrote ${filteredRows.length} filtered rows`);
-  } else {
-    console.log("[Write] No rows to write (all deleted or empty)");
+
+  if (sheetIndicesToDelete.length === 0) {
+    console.log("[Write] No matching rows found in spreadsheet for deletion");
+    return;
   }
-  
-  console.log("[Write] Delete operation completed successfully");
+
+  // Sort descending so deleting lower rows doesn't shift indices of rows above
+  sheetIndicesToDelete.sort((a, b) => b - a);
+
+  console.log(`[Write] Deleting ${sheetIndicesToDelete.length} rows at indices:`, sheetIndicesToDelete);
+
+  // Build deleteDimension requests — one per row, all in a single batchUpdate
+  const requests = sheetIndicesToDelete.map(index => ({
+    deleteDimension: {
+      range: {
+        sheetId: 0, // First sheet (Transaksi)
+        dimension: "ROWS",
+        startIndex: index,
+        endIndex: index + 1
+      }
+    }
+  }));
+
+  await _sheetsRequest(`/${_spreadsheetId}:batchUpdate`, {
+    method: "POST",
+    body: JSON.stringify({ requests })
+  });
+
+  console.log("[Write] deleteDimension batch completed — no full rewrite needed");
 }
 
 async function _writeSubCategories(subCategories) {
