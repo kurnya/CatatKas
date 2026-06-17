@@ -1384,6 +1384,7 @@ async function deleteTransaction(id) {
   state.transactions = state.transactions.filter((item) => item.id !== id);
   
   console.log(`[Delete] Setelah hapus: ${state.transactions.length} transaksi`);
+  console.log(`[Delete] IDs remaining:`, state.transactions.map(tx => tx.id).slice(0, 5));
   
   persist();
   renderAll();

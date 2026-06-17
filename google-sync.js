@@ -531,6 +531,10 @@ async function _writeTransactions(transactions) {
   
   console.log(`[Write] Changes detected: ${toUpdate.length} updates, ${toDelete.length} deletes`);
   
+  if (toDelete.length > 0) {
+    console.log(`[Write] IDs to delete:`, toDelete);
+  }
+  
   // Apply changes
   if (toUpdate.length > 0) {
     await _batchUpdateTransactions(toUpdate);
@@ -540,7 +544,8 @@ async function _writeTransactions(transactions) {
     await _batchDeleteTransactions(toDelete);
   }
   
-  // Update tracked IDs
+  // Update tracked IDs AFTER operations complete
+  console.log(`[Write] Updating tracked IDs: ${_lastSyncedTransactionIds.size} -> ${currentIds.size}`);
   _lastSyncedTransactionIds = currentIds;
   
   console.log("[Write] Differential sync completed");
@@ -642,7 +647,7 @@ async function _batchUpdateTransactions(transactions) {
 async function _batchDeleteTransactions(idsToDelete) {
   if (idsToDelete.length === 0) return;
   
-  console.log(`[Write] Deleting ${idsToDelete.length} transactions`);
+  console.log(`[Write] Deleting ${idsToDelete.length} transactions:`, idsToDelete);
   
   // Read all data
   const result = await _sheetsRequest(
@@ -650,15 +655,51 @@ async function _batchDeleteTransactions(idsToDelete) {
   );
   const rows = result.values || [];
   
-  // Filter out deleted rows
-  const deleteSet = new Set(idsToDelete);
-  const filteredRows = rows.filter(row => !deleteSet.has(row[0]));
+  console.log(`[Write] Read ${rows.length} rows from spreadsheet`);
+  if (rows.length > 0) {
+    console.log(`[Write] Sample row IDs:`, rows.filter(r => r[0]).slice(0, 3).map(r => r[0]));
+  }
   
-  // Rewrite with filtered data
-  await _sheetsRequest(`/${_spreadsheetId}/values/Transaksi!A2:I?valueInputOption=RAW`, {
-    method: "PUT",
-    body: JSON.stringify({ values: filteredRows.length ? filteredRows : [[]] })
+  // Filter out deleted rows (only keep rows with valid IDs that are not in delete list)
+  const deleteSet = new Set(idsToDelete);
+  const filteredRows = rows.filter(row => {
+    // Skip empty rows
+    if (!row || !row[0]) {
+      console.log("[Write] Skipping empty row");
+      return false;
+    }
+    
+    const shouldKeep = !deleteSet.has(row[0]);
+    if (!shouldKeep) {
+      console.log(`[Write] Removing row with ID: ${row[0]}`);
+    }
+    return shouldKeep;
   });
+  
+  console.log(`[Write] After filtering: ${filteredRows.length} rows remain`);
+  
+  // Use batchClear to remove all data first
+  await _sheetsRequest(`/${_spreadsheetId}/values:batchClear`, {
+    method: "POST",
+    body: JSON.stringify({
+      ranges: [`Transaksi!A2:I`]
+    })
+  });
+  
+  console.log("[Write] Cleared old data using batchClear");
+  
+  // Write filtered data
+  if (filteredRows.length > 0) {
+    await _sheetsRequest(`/${_spreadsheetId}/values/Transaksi!A2:I?valueInputOption=RAW`, {
+      method: "PUT",
+      body: JSON.stringify({ values: filteredRows })
+    });
+    console.log(`[Write] Wrote ${filteredRows.length} filtered rows`);
+  } else {
+    console.log("[Write] No rows to write (all deleted or empty)");
+  }
+  
+  console.log("[Write] Delete operation completed successfully");
 }
 
 async function _writeSubCategories(subCategories) {
