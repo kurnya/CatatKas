@@ -133,29 +133,27 @@ function setAutoSyncEnabled(enabled) {
   }
 }
 
-// Check for remote changes and pull if needed (for bidirectional auto-sync).
-// Returns true if remote changes were pulled and merged.
-async function pullRemoteChanges() {
-  if (!isSignedIn() || !_spreadsheetId || !_onDataMerge) return false;
-  if (_syncInProgress) return false;
+// Full pull from sheet — replaces local state entirely (sheet is source of truth).
+// Call this BEFORE applying any local change (add/edit/delete) so that:
+// - Remote deletions are reflected locally
+// - Remote additions are pulled in
+// - Then the local action is applied on top of the fresh data
+async function syncBeforeAction() {
+  if (!isSignedIn() || !_spreadsheetId) return;
+  if (_syncInProgress) return;
 
   try {
-    const sheetModified = await _getSheetModifiedTime();
-    if (!sheetModified) return false;
-
-    const baseline = _lastKnownSheetModified || _lastSyncTime;
-    if (baseline && sheetModified <= baseline) return false;
-
-    console.log(`[Sync] Remote changes detected (sheet: ${sheetModified}, baseline: ${baseline}), pulling...`);
-    _syncInProgress = true;
+    await _ensureValidToken();
 
     const transactions = await _readTransactions();
     const subCategories = await _readSubCategories();
     const paymentMethods = await _readPaymentMethods();
 
-    if (transactions && transactions.length > 0) {
+    if (_onDataMerge && typeof _onDataMerge === "function") {
+      // Full replace: sheet data overrides local for all synced items
       _onDataMerge({ transactions, subCategories, paymentMethods });
-      _lastSyncedTransactionIds = new Set(transactions.map(tx => tx.id));
+      _lastSyncedTransactionIds = new Set((transactions || []).map(tx => tx.id));
+      // Also include any local-only IDs (unsynced) from persisted state
       try {
         const localState = JSON.parse(localStorage.getItem("catatan_keuangan_pwa_v1") || "{}");
         if (localState.transactions && Array.isArray(localState.transactions)) {
@@ -166,16 +164,15 @@ async function pullRemoteChanges() {
       } catch { /* ignore */ }
     }
 
-    _lastKnownSheetModified = sheetModified;
+    // Update baseline
+    try {
+      const modTime = await _getSheetModifiedTime();
+      if (modTime) _lastKnownSheetModified = modTime;
+    } catch { /* ignore */ }
     _lastSyncTime = new Date().toISOString();
     _saveSyncMeta();
-    console.log("[Sync] Remote changes pulled and merged successfully");
-    return true;
   } catch (err) {
-    console.warn("[Sync] Remote change pull failed:", err);
-    return false;
-  } finally {
-    _syncInProgress = false;
+    console.warn("[Sync] syncBeforeAction failed, proceeding with local state:", err);
   }
 }
 
@@ -237,8 +234,8 @@ async function pushToSheets(appState, silent = false) {
     
     await _ensureSpreadsheet();
 
-    // Check for remote changes before pushing (cross-device reconciliation)
-    await _reconcileRemoteChanges(appState);
+    // Full pull before push: ensures local state matches sheet exactly
+    await syncBeforeAction();
 
     console.log("[Sync] Writing transactions to spreadsheet...");
     await _writeTransactions(appState.transactions || []);
@@ -617,51 +614,6 @@ async function _getSheetModifiedTime() {
     return meta.modifiedTime || null;
   } catch {
     return null;
-  }
-}
-
-// Check if another device modified the spreadsheet since our last sync.
-// If so, pull remote changes and merge before pushing local changes.
-async function _reconcileRemoteChanges(appState) {
-  if (!_spreadsheetId || !_onDataMerge) return;
-
-  const sheetModified = await _getSheetModifiedTime();
-  if (!sheetModified) return;
-
-  // Compare against last known sheet modified time (authoritative, from server)
-  const baseline = _lastKnownSheetModified || _lastSyncTime;
-  if (baseline && sheetModified <= baseline) {
-    console.log("[Sync] No remote changes detected");
-    return;
-  }
-
-  console.log(`[Sync] Remote changes detected (sheet: ${sheetModified}, baseline: ${baseline}), pulling before push...`);
-
-  try {
-    const transactions = await _readTransactions();
-    const subCategories = await _readSubCategories();
-    const paymentMethods = await _readPaymentMethods();
-
-    if (transactions && transactions.length > 0) {
-      _onDataMerge({ transactions, subCategories, paymentMethods });
-      _lastSyncedTransactionIds = new Set(transactions.map(tx => tx.id));
-      try {
-        const localState = JSON.parse(localStorage.getItem("catatan_keuangan_pwa_v1") || "{}");
-        if (localState.transactions && Array.isArray(localState.transactions)) {
-          for (const tx of localState.transactions) {
-            if (tx.id) _lastSyncedTransactionIds.add(tx.id);
-          }
-        }
-      } catch { /* ignore */ }
-    }
-
-    // Update baseline to the sheet's authoritative modified time
-    _lastKnownSheetModified = sheetModified;
-    _lastSyncTime = new Date().toISOString();
-    _saveSyncMeta();
-    console.log("[Sync] Remote changes reconciled successfully");
-  } catch (err) {
-    console.warn("[Sync] Reconciliation failed, proceeding with push:", err);
   }
 }
 

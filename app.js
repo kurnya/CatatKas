@@ -412,35 +412,23 @@ function initGoogleSheetsSync() {
       _renderSyncUI();
     },
     onDataMerge: (data) => {
-      // Smart merge: sheet data is source of truth for synced items
+      // Full replace: sheet is source of truth
+      // All transactions on the sheet become local state
+      // Transactions deleted on the sheet are removed locally
       if (data.transactions && Array.isArray(data.transactions)) {
-        const sheetById = new Map(data.transactions.map(tx => [tx.id, tx]));
-        const localById = new Map(state.transactions.map(tx => [tx.id, tx]));
-        
-        // Start with local data (keep unsynced local transactions)
-        const merged = new Map(localById);
-        
-        // Add/update with sheet data (sheet is source of truth for synced items)
-        for (const [id, tx] of sheetById) {
-          merged.set(id, tx);
-        }
-        
-        state.transactions = Array.from(merged.values());
-        
-        console.log(`[Merge] Merged transactions: ${state.transactions.length} total`);
+        state.transactions = data.transactions;
+        console.log(`[Merge] Replaced local transactions with sheet data: ${state.transactions.length} total`);
       }
       
-      // Merge subCategories
+      // Replace subCategories and paymentMethods from sheet
       if (data.subCategories && typeof data.subCategories === "object") {
-        state.subCategories = { ...state.subCategories, ...data.subCategories };
-        console.log("[Merge] Merged subCategories");
+        state.subCategories = data.subCategories;
+        console.log("[Merge] Replaced subCategories from sheet");
       }
       
-      // Merge paymentMethods
       if (data.paymentMethods && Array.isArray(data.paymentMethods)) {
-        const combined = [...new Set([...state.paymentMethods, ...data.paymentMethods])];
-        state.paymentMethods = combined;
-        console.log(`[Merge] Merged paymentMethods: ${state.paymentMethods.length} total`);
+        state.paymentMethods = data.paymentMethods;
+        console.log(`[Merge] Replaced paymentMethods from sheet: ${state.paymentMethods.length} total`);
       }
       
       // Save and re-render
@@ -452,8 +440,8 @@ function initGoogleSheetsSync() {
   if (typeof setAutoSyncCallback === "function") {
     setAutoSyncCallback(async () => {
       // Bidirectional sync: pull remote changes first, then push local changes
-      if (typeof pullRemoteChanges === "function") {
-        await pullRemoteChanges();
+      if (typeof syncBeforeAction === "function") {
+        await syncBeforeAction();
       }
       if (typeof pushToSheets === "function") {
         pushToSheets(state, true); // silent — no toast
@@ -682,6 +670,13 @@ async function saveTransaction(event) {
     note: elements.note.value.trim(),
     updatedAt: new Date().toISOString()
   };
+
+  // Full pull from sheet before applying any change
+  // This ensures local state matches the sheet (remote deletions/additions are reflected)
+  if (typeof syncBeforeAction === "function") {
+    console.log("[Save] Syncing from spreadsheet before save...");
+    await syncBeforeAction();
+  }
 
   const index = state.transactions.findIndex((item) => item.id === transaction.id);
   if (index >= 0) {
@@ -1418,7 +1413,14 @@ async function deleteTransaction(id) {
     type: "danger"
   });
   if (!confirmed) return;
-  
+
+  // Full pull from sheet before applying any change
+  // This ensures local state matches the sheet (remote deletions/additions are reflected)
+  if (typeof syncBeforeAction === "function") {
+    console.log("[Delete] Syncing from spreadsheet before delete...");
+    await syncBeforeAction();
+  }
+
   console.log(`[Delete] Menghapus transaksi ID: ${id}`);
   console.log(`[Delete] Sebelum hapus: ${state.transactions.length} transaksi`);
   
