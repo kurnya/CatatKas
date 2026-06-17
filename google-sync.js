@@ -137,31 +137,49 @@ function setAutoSyncEnabled(enabled) {
 // Call this BEFORE applying any local change (add/edit/delete) so that:
 // - Remote deletions are reflected locally
 // - Remote additions are pulled in
+// - Unsynced local transactions (created offline) are preserved
 // - Then the local action is applied on top of the fresh data
 async function syncBeforeAction() {
   if (!isSignedIn() || !_spreadsheetId) return;
   if (_syncInProgress) return;
+  // Skip if offline — preserve all local data
+  if (typeof navigator !== "undefined" && !navigator.onLine) {
+    console.log("[Sync] Offline, skipping syncBeforeAction");
+    return;
+  }
 
   try {
     await _ensureValidToken();
+
+    // Track unsynced local transactions BEFORE pulling
+    // These are transactions created locally but not yet pushed to the sheet
+    let unsyncedTransactions = [];
+    try {
+      const localState = JSON.parse(localStorage.getItem("catatan_keuangan_pwa_v1") || "{}");
+      if (localState.transactions && Array.isArray(localState.transactions)) {
+        unsyncedTransactions = localState.transactions.filter(
+          tx => tx.id && !_lastSyncedTransactionIds.has(tx.id)
+        );
+      }
+    } catch { /* ignore */ }
 
     const transactions = await _readTransactions();
     const subCategories = await _readSubCategories();
     const paymentMethods = await _readPaymentMethods();
 
     if (_onDataMerge && typeof _onDataMerge === "function") {
-      // Full replace: sheet data overrides local for all synced items
-      _onDataMerge({ transactions, subCategories, paymentMethods });
-      _lastSyncedTransactionIds = new Set((transactions || []).map(tx => tx.id));
-      // Also include any local-only IDs (unsynced) from persisted state
-      try {
-        const localState = JSON.parse(localStorage.getItem("catatan_keuangan_pwa_v1") || "{}");
-        if (localState.transactions && Array.isArray(localState.transactions)) {
-          for (const tx of localState.transactions) {
-            if (tx.id) _lastSyncedTransactionIds.add(tx.id);
-          }
+      // Sheet data + unsynced local transactions (preserves offline-created data)
+      const sheetById = new Map((transactions || []).map(tx => [tx.id, tx]));
+      for (const tx of unsyncedTransactions) {
+        if (!sheetById.has(tx.id)) {
+          sheetById.set(tx.id, tx);
+          console.log(`[Sync] Preserved unsynced local transaction: ${tx.id}`);
         }
-      } catch { /* ignore */ }
+      }
+      const mergedTransactions = Array.from(sheetById.values());
+
+      _onDataMerge({ transactions: mergedTransactions, subCategories, paymentMethods });
+      _lastSyncedTransactionIds = new Set((transactions || []).map(tx => tx.id));
     }
 
     // Update baseline
