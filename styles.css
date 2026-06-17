@@ -1121,22 +1121,53 @@ select:focus {
 
 .sync-switch {
   display: flex;
-  flex-direction: column;
-  gap: 6px;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
   font-size: 0.875rem;
+  cursor: pointer;
+  position: relative;
 }
 
-.sync-switch select {
-  padding: 10px 14px;
-  border-radius: 12px;
-  border: 1px solid var(--line, #e2e8f0);
-  background: var(--soft, #f8fafc);
-  color: inherit;
-  font-size: 0.9rem;
-  font-weight: 600;
+.toggle-input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.toggle-slider {
+  position: relative;
+  display: inline-block;
+  width: 44px;
+  height: 24px;
+  flex-shrink: 0;
+  background: var(--line, #cbd5e1);
+  border-radius: 24px;
   cursor: pointer;
-  width: 100%;
-  appearance: auto;
+  transition: background 0.25s ease;
+}
+
+.toggle-slider::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 20px;
+  height: 20px;
+  background: #fff;
+  border-radius: 50%;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+  transition: transform 0.25s ease;
+}
+
+.toggle-input:checked + .toggle-slider {
+  background: var(--primary, #0f766e);
+}
+
+.toggle-input:checked + .toggle-slider::after {
+  transform: translateX(20px);
 }
 
 .sync-actions {

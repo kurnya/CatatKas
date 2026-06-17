@@ -22,7 +22,7 @@ let _tokenExpiry = 0;
 let _userEmail = null;
 let _spreadsheetId = null;
 let _syncInProgress = false;
-let _autoSyncInterval = "off";
+let _autoSyncEnabled = false;
 let _autoSyncTimer = null;
 let _lastSyncTime = null;
 let _lastPushTime = null;
@@ -50,7 +50,7 @@ function initGoogleSync(callbacks) {
     _spreadsheetId = meta.spreadsheetId || null;
     _lastSyncTime = meta.lastSyncTime || null;
     _lastPushTime = meta.lastPushTime || meta.lastSyncTime || null;
-    _autoSyncInterval = meta.autoSyncInterval || "off";
+    _autoSyncEnabled = meta.autoSyncEnabled !== undefined ? meta.autoSyncEnabled : (meta.autoSyncInterval && meta.autoSyncInterval !== "off");
     _lastKnownSheetModified = meta.lastKnownSheetModified || null;
     
     // Restore synced transaction IDs for differential sync
@@ -92,7 +92,7 @@ function initGoogleSync(callbacks) {
       console.log("[Sync] Restored token valid, no spreadsheet ID — triggering background discovery...");
       _discoverExistingSpreadsheet();
     }
-    if (_autoSyncInterval !== "off") setAutoSyncInterval(_autoSyncInterval);
+    if (_autoSyncEnabled) setAutoSyncEnabled(true);
   }
 
   _initGoogleIdentityServices();
@@ -120,28 +120,66 @@ function getLastSyncTime() {
 }
 
 function isAutoSyncEnabled() {
-  return _autoSyncInterval !== "off";
+  return _autoSyncEnabled;
 }
 
-function getAutoSyncInterval() {
-  return _autoSyncInterval;
-}
-
-const INTERVAL_MS = {
-  "off": 0,
-  "3h":  3 * 60 * 60 * 1000,
-  "6h":  6 * 60 * 60 * 1000,
-  "12h": 12 * 60 * 60 * 1000,
-  "24h": 24 * 60 * 60 * 1000,
-  "3d":  3 * 24 * 60 * 60 * 1000,
-  "7d":  7 * 24 * 60 * 60 * 1000
-};
-
-function setAutoSyncInterval(interval) {
-  _autoSyncInterval = interval;
+function setAutoSyncEnabled(enabled) {
+  _autoSyncEnabled = !!enabled;
   _saveSyncMeta();
-  _scheduleAutoSync();
+  if (_autoSyncEnabled) {
+    _scheduleAutoSync();
+  } else {
+    _clearAutoSyncTimer();
+  }
 }
+
+// Check for remote changes and pull if needed (for bidirectional auto-sync).
+// Returns true if remote changes were pulled and merged.
+async function pullRemoteChanges() {
+  if (!isSignedIn() || !_spreadsheetId || !_onDataMerge) return false;
+  if (_syncInProgress) return false;
+
+  try {
+    const sheetModified = await _getSheetModifiedTime();
+    if (!sheetModified) return false;
+
+    const baseline = _lastKnownSheetModified || _lastSyncTime;
+    if (baseline && sheetModified <= baseline) return false;
+
+    console.log(`[Sync] Remote changes detected (sheet: ${sheetModified}, baseline: ${baseline}), pulling...`);
+    _syncInProgress = true;
+
+    const transactions = await _readTransactions();
+    const subCategories = await _readSubCategories();
+    const paymentMethods = await _readPaymentMethods();
+
+    if (transactions && transactions.length > 0) {
+      _onDataMerge({ transactions, subCategories, paymentMethods });
+      _lastSyncedTransactionIds = new Set(transactions.map(tx => tx.id));
+      try {
+        const localState = JSON.parse(localStorage.getItem("catatan_keuangan_pwa_v1") || "{}");
+        if (localState.transactions && Array.isArray(localState.transactions)) {
+          for (const tx of localState.transactions) {
+            if (tx.id) _lastSyncedTransactionIds.add(tx.id);
+          }
+        }
+      } catch { /* ignore */ }
+    }
+
+    _lastKnownSheetModified = sheetModified;
+    _lastSyncTime = new Date().toISOString();
+    _saveSyncMeta();
+    console.log("[Sync] Remote changes pulled and merged successfully");
+    return true;
+  } catch (err) {
+    console.warn("[Sync] Remote change pull failed:", err);
+    return false;
+  } finally {
+    _syncInProgress = false;
+  }
+}
+
+const AUTO_SYNC_INTERVAL_MS = 30 * 60 * 1000; // 30 minutes
 
 function signIn() {
   if (!window.google?.accounts?.oauth2) {
@@ -170,11 +208,11 @@ function signOut() {
   _spreadsheetId = null;
   _lastSyncTime = null;
   _lastPushTime = null;
-  _autoSyncInterval = "off";
+  _autoSyncEnabled = false;
   _lastSyncedTransactionIds.clear(); // Clear synced IDs
   localStorage.removeItem(SYNC_META_KEY);
   localStorage.removeItem(SYNC_TOKEN_KEY);
-  setAutoSyncInterval("off");
+  setAutoSyncEnabled(false);
   _onAuthChange?.(false);
 }
 
@@ -445,8 +483,8 @@ function _handleTokenResponse(response) {
   _fetchUserEmail();
 
   // Start auto-sync if enabled
-  if (_autoSyncInterval !== "off") {
-    setAutoSyncInterval(_autoSyncInterval);
+  if (_autoSyncEnabled) {
+    setAutoSyncEnabled(true);
   }
   
   // Auto-discover existing spreadsheet for this account
@@ -685,7 +723,7 @@ function _saveSyncMeta() {
     spreadsheetId: _spreadsheetId,
     lastSyncTime: _lastSyncTime,
     lastPushTime: _lastPushTime,
-    autoSyncInterval: _autoSyncInterval,
+    autoSyncEnabled: _autoSyncEnabled,
     lastSyncedTransactionIds: [..._lastSyncedTransactionIds],
     lastKnownSheetModified: _lastKnownSheetModified
   }));
@@ -1095,12 +1133,11 @@ function _clearAutoSyncTimer() {
 
 function _scheduleAutoSync() {
   _clearAutoSyncTimer();
-  const ms = INTERVAL_MS[_autoSyncInterval] || 0;
-  if (ms <= 0 || !isSignedIn()) return;
+  if (!_autoSyncEnabled || !isSignedIn()) return;
 
   const lastPushMs = Date.parse(_lastPushTime || "");
-  const elapsed = Number.isFinite(lastPushMs) ? Date.now() - lastPushMs : ms;
-  const delay = Math.max(ms - elapsed, 0);
+  const elapsed = Number.isFinite(lastPushMs) ? Date.now() - lastPushMs : AUTO_SYNC_INTERVAL_MS;
+  const delay = Math.max(AUTO_SYNC_INTERVAL_MS - elapsed, 0);
 
   _autoSyncTimer = setTimeout(() => {
     _autoSyncTimer = null;
@@ -1109,12 +1146,11 @@ function _scheduleAutoSync() {
 }
 
 function _scheduleAutoSyncRetry() {
-  const ms = INTERVAL_MS[_autoSyncInterval] || 0;
-  if (ms <= 0 || !isSignedIn() || _autoSyncTimer) return;
+  if (!_autoSyncEnabled || !isSignedIn() || _autoSyncTimer) return;
   _autoSyncTimer = setTimeout(() => {
     _autoSyncTimer = null;
     _triggerAutoSync();
-  }, ms);
+  }, AUTO_SYNC_INTERVAL_MS);
 }
 
 function _triggerAutoSync() {

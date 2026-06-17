@@ -219,16 +219,10 @@
           <div class="sync-toggle-row">
             <label class="sync-switch">
               <span>Sinkronisasi otomatis:</span>
-              <select id="syncAutoInterval">
-                <option value="off">Mati</option>
-                <option value="3h">Setiap 3 jam</option>
-                <option value="6h">Setiap 6 jam</option>
-                <option value="12h">Setiap 12 jam</option>
-                <option value="24h">Setiap 24 jam</option>
-                <option value="3d">Setiap 3 hari</option>
-                <option value="7d">Setiap 1 minggu</option>
-              </select>
+              <input type="checkbox" id="syncAutoToggle" class="toggle-input">
+              <span class="toggle-slider"></span>
             </label>
+            <p class="helper-text" style="margin:4px 0 0;font-size:12px;opacity:0.7;">Data otomatis dikirim & dimuat setiap ada perubahan.</p>
           </div>
           <div class="settings-actions sync-actions">
             <button type="button" class="primary-button compact-action" id="syncSignInButton">Masuk dengan Google</button>

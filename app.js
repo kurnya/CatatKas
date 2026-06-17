@@ -143,7 +143,7 @@ const elements = {
   syncInfoBlock: document.querySelector("#syncInfoBlock"),
   syncLastTime: document.querySelector("#syncLastTime"),
   syncSheetLink: document.querySelector("#syncSheetLink"),
-  syncAutoInterval: document.querySelector("#syncAutoInterval"),
+  syncAutoToggle: document.querySelector("#syncAutoToggle"),
   syncSignInButton: document.querySelector("#syncSignInButton"),
   syncPushButton: document.querySelector("#syncPushButton"),
   syncPullButton: document.querySelector("#syncPullButton"),
@@ -293,14 +293,13 @@ function bindEvents() {
     _renderSyncUI();
     showToast("Akun Google berhasil diputuskan.", "info");
   });
-  elements.syncAutoInterval.addEventListener("change", () => {
-    const val = elements.syncAutoInterval.value;
-    if (typeof setAutoSyncInterval === "function") setAutoSyncInterval(val);
-    const label = elements.syncAutoInterval.options[elements.syncAutoInterval.selectedIndex].text;
+  elements.syncAutoToggle.addEventListener("change", () => {
+    const enabled = elements.syncAutoToggle.checked;
+    if (typeof setAutoSyncEnabled === "function") setAutoSyncEnabled(enabled);
     showToast(
-      val === "off"
-        ? "Sinkronisasi otomatis dinonaktifkan."
-        : `Sinkronisasi otomatis aktif: ${label}.`,
+      enabled
+        ? "Sinkronisasi otomatis diaktifkan."
+        : "Sinkronisasi otomatis dinonaktifkan.",
       "info"
     );
   });
@@ -451,8 +450,14 @@ function initGoogleSheetsSync() {
   });
 
   if (typeof setAutoSyncCallback === "function") {
-    setAutoSyncCallback(() => {
-      if (typeof pushToSheets === "function") pushToSheets(state, true); // silent — no toast
+    setAutoSyncCallback(async () => {
+      // Bidirectional sync: pull remote changes first, then push local changes
+      if (typeof pullRemoteChanges === "function") {
+        await pullRemoteChanges();
+      }
+      if (typeof pushToSheets === "function") {
+        pushToSheets(state, true); // silent — no toast
+      }
     });
   }
 
@@ -511,8 +516,8 @@ function _renderSyncUI() {
     elements.syncUserRow.hidden = true;
   }
 
-  if (typeof getAutoSyncInterval === "function") {
-    elements.syncAutoInterval.value = getAutoSyncInterval();
+  if (typeof isAutoSyncEnabled === "function") {
+    elements.syncAutoToggle.checked = isAutoSyncEnabled();
   }
 }
 
