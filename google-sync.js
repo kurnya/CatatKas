@@ -217,8 +217,8 @@ async function pushToSheets(appState, silent = false) {
 
     // Store authoritative sheet modifiedTime from server to avoid false positives
     try {
-      const meta = await _sheetsRequest(`/${_spreadsheetId}?fields=modifiedTime`);
-      if (meta.modifiedTime) _lastKnownSheetModified = meta.modifiedTime;
+      const modTime = await _getSheetModifiedTime();
+      if (modTime) _lastKnownSheetModified = modTime;
     } catch { /* ignore */ }
 
     _saveSyncMeta();
@@ -375,8 +375,8 @@ async function pullFromSheets() {
     _lastSyncTime = new Date().toISOString();
     // Update sheet modified baseline after pull
     try {
-      const meta = await _sheetsRequest(`/${_spreadsheetId}?fields=modifiedTime`);
-      if (meta.modifiedTime) _lastKnownSheetModified = meta.modifiedTime;
+      const modTime = await _getSheetModifiedTime();
+      if (modTime) _lastKnownSheetModified = modTime;
     } catch { /* ignore */ }
     _saveSyncMeta();
     _onSyncComplete?.("pull", true, "Data berhasil dimuat dari Google Spreadsheet.");
@@ -566,10 +566,16 @@ async function _autoPullFromDiscoveredSpreadsheet() {
   }
 }
 
-// Get the spreadsheet's last modified time from Google server
+// Get the spreadsheet's last modified time from Google Drive API
 async function _getSheetModifiedTime() {
   try {
-    const meta = await _sheetsRequest(`/${_spreadsheetId}?fields=modifiedTime`);
+    await _ensureValidToken();
+    const res = await fetch(
+      `${DRIVE_API}/${_spreadsheetId}?fields=modifiedTime`,
+      { headers: { Authorization: `Bearer ${_accessToken}` } }
+    );
+    if (!res.ok) return null;
+    const meta = await res.json();
     return meta.modifiedTime || null;
   } catch {
     return null;
