@@ -26,6 +26,7 @@ let _autoSyncInterval = "off";
 let _autoSyncTimer = null;
 let _lastSyncTime = null;
 let _lastPushTime = null;
+let _lastSyncedTransactionIds = new Set(); // Track which transactions were last synced
 
 // ── CALLBACKS (set by app.js) ─────────────────
 let _onSyncStateChange = null;   // (isSyncing: bool) => void
@@ -46,6 +47,12 @@ function initGoogleSync(callbacks) {
     _lastSyncTime = meta.lastSyncTime || null;
     _lastPushTime = meta.lastPushTime || meta.lastSyncTime || null;
     _autoSyncInterval = meta.autoSyncInterval || "off";
+    
+    // Restore synced transaction IDs for differential sync
+    if (meta.lastSyncedTransactionIds && Array.isArray(meta.lastSyncedTransactionIds)) {
+      _lastSyncedTransactionIds = new Set(meta.lastSyncedTransactionIds);
+      console.log(`[Sync] Restored ${_lastSyncedTransactionIds.size} synced transaction IDs`);
+    }
 
     // Restore token (survives hard refresh) — restore even if expired
     const saved = JSON.parse(localStorage.getItem(SYNC_TOKEN_KEY) || "{}");
@@ -147,6 +154,7 @@ function signOut() {
   _lastSyncTime = null;
   _lastPushTime = null;
   _autoSyncInterval = "off";
+  _lastSyncedTransactionIds.clear(); // Clear synced IDs
   localStorage.removeItem(SYNC_META_KEY);
   localStorage.removeItem(SYNC_TOKEN_KEY);
   setAutoSyncInterval("off");
@@ -158,18 +166,28 @@ async function pushToSheets(appState, silent = false) {
     if (!silent) _onSyncComplete?.("push", false, "Anda belum masuk ke akun Google.");
     return false;
   }
-  if (_syncInProgress) return false;
+  if (_syncInProgress) {
+    console.log("[Sync] Push already in progress, skipping");
+    return false;
+  }
   _syncInProgress = true;
   if (!silent) _onSyncStateChange?.(true);
+  
+  const txCount = (appState.transactions || []).length;
+  console.log(`[Sync] Starting push: ${txCount} transactions (silent: ${silent})`);
 
   try {
     // Pastikan token valid (akan auto-refresh jika expired)
     await _ensureValidToken();
     
     await _ensureSpreadsheet();
+    console.log("[Sync] Writing transactions to spreadsheet...");
     await _writeTransactions(appState.transactions || []);
+    console.log("[Sync] Writing sub-categories...");
     await _writeSubCategories(appState.subCategories || {});
+    console.log("[Sync] Writing payment methods...");
     await _writePaymentMethods(appState.paymentMethods || []);
+    console.log("[Sync] Writing metadata...");
     await _writeMetadata(appState);
 
     const syncedAt = new Date().toISOString();
@@ -177,10 +195,33 @@ async function pushToSheets(appState, silent = false) {
     _lastPushTime = syncedAt;
     _saveSyncMeta();
     _scheduleAutoSync();
+    
+    console.log("[Sync] Push completed successfully");
     if (!silent) _onSyncComplete?.("push", true, "Data berhasil disimpan ke Google Spreadsheet.");
     return true;
   } catch (err) {
     console.error("[Sync] Push error:", err);
+    
+    // If differential sync fails, try full rewrite as fallback
+    if (err.message && (err.message.includes("batchUpdate") || err.message.includes("range"))) {
+      console.warn("[Sync] Differential sync failed, attempting full rewrite fallback...");
+      try {
+        await _fullWriteTransactions(appState.transactions || []);
+        _lastSyncedTransactionIds = new Set((appState.transactions || []).map(tx => tx.id));
+        
+        const syncedAt = new Date().toISOString();
+        _lastSyncTime = syncedAt;
+        _lastPushTime = syncedAt;
+        _saveSyncMeta();
+        
+        console.log("[Sync] Full rewrite fallback succeeded");
+        if (!silent) _onSyncComplete?.("push", true, "Data berhasil disimpan ke Google Spreadsheet.");
+        return true;
+      } catch (fallbackErr) {
+        console.error("[Sync] Full rewrite fallback also failed:", fallbackErr);
+        err = fallbackErr; // Use fallback error for handling below
+      }
+    }
     
     // Jika token refresh gagal dan ini silent mode, jangan langsung disconnect
     // Biarkan user tetap "terhubung" dan akan retry lagi di transaksi berikutnya
@@ -382,7 +423,8 @@ function _saveSyncMeta() {
     spreadsheetId: _spreadsheetId,
     lastSyncTime: _lastSyncTime,
     lastPushTime: _lastPushTime,
-    autoSyncInterval: _autoSyncInterval
+    autoSyncInterval: _autoSyncInterval,
+    lastSyncedTransactionIds: [..._lastSyncedTransactionIds] // Persist synced IDs
   }));
 }
 
@@ -463,6 +505,49 @@ async function _ensureSpreadsheet() {
 // ── INTERNAL: Write Data ──────────────────────
 
 async function _writeTransactions(transactions) {
+  console.log(`[Write] Syncing ${transactions.length} transactions (differential mode)`);
+  
+  // First sync: do full rewrite
+  if (_lastSyncedTransactionIds.size === 0 && transactions.length > 0) {
+    console.log("[Write] First sync detected, doing full rewrite");
+    await _fullWriteTransactions(transactions);
+    _lastSyncedTransactionIds = new Set(transactions.map(tx => tx.id));
+    return;
+  }
+  
+  // Differential sync: detect changes
+  const currentIds = new Set(transactions.map(tx => tx.id));
+  const previousIds = _lastSyncedTransactionIds;
+  
+  // Find new/updated transactions
+  const toUpdate = transactions.filter(tx => {
+    const isNew = !previousIds.has(tx.id);
+    const isUpdated = !isNew && tx.updatedAt && new Date(tx.updatedAt) > new Date(_lastSyncTime || 0);
+    return isNew || isUpdated;
+  });
+  
+  // Find deleted transactions
+  const toDelete = [...previousIds].filter(id => !currentIds.has(id));
+  
+  console.log(`[Write] Changes detected: ${toUpdate.length} updates, ${toDelete.length} deletes`);
+  
+  // Apply changes
+  if (toUpdate.length > 0) {
+    await _batchUpdateTransactions(toUpdate);
+  }
+  
+  if (toDelete.length > 0) {
+    await _batchDeleteTransactions(toDelete);
+  }
+  
+  // Update tracked IDs
+  _lastSyncedTransactionIds = currentIds;
+  
+  console.log("[Write] Differential sync completed");
+}
+
+// Full rewrite (for first sync or fallback)
+async function _fullWriteTransactions(transactions) {
   const rows = transactions.map(tx => [
     tx.id || "",
     tx.date || "",
@@ -475,10 +560,104 @@ async function _writeTransactions(transactions) {
     tx.updatedAt || ""
   ]);
 
-  // Clear and rewrite the whole sheet (simple & reliable)
+  console.log(`[Write] Full rewrite: ${rows.length} rows`);
+  
   await _sheetsRequest(`/${_spreadsheetId}/values/Transaksi!A2:I?valueInputOption=RAW`, {
     method: "PUT",
     body: JSON.stringify({ values: rows.length ? rows : [[]] })
+  });
+}
+
+// Batch update/insert transactions
+async function _batchUpdateTransactions(transactions) {
+  if (transactions.length === 0) return;
+  
+  console.log(`[Write] Batch updating ${transactions.length} transactions`);
+  
+  // Read current data to find row positions
+  const existingData = await _sheetsRequest(
+    `/${_spreadsheetId}/values/Transaksi!A2:A?majorDimension=ROWS`
+  );
+  const existingRows = existingData.values || [];
+  const idToRowMap = new Map();
+  existingRows.forEach((row, idx) => {
+    if (row[0]) idToRowMap.set(row[0], idx + 2); // +2 because A2 is row 2
+  });
+  
+  // Separate into updates (existing rows) and inserts (new rows)
+  const rowUpdates = [];
+  const newTransactions = [];
+  
+  for (const tx of transactions) {
+    const row = [
+      tx.id || "",
+      tx.date || "",
+      tx.type || "",
+      tx.category || "",
+      tx.subCategory || "",
+      tx.amount != null ? String(tx.amount) : "",
+      tx.paymentMethod || "",
+      tx.note || "",
+      tx.updatedAt || ""
+    ];
+    
+    const existingRow = idToRowMap.get(tx.id);
+    if (existingRow) {
+      // Update existing row
+      rowUpdates.push({
+        range: `Transaksi!A${existingRow}:I${existingRow}`,
+        values: [row]
+      });
+    } else {
+      // New transaction, will be appended
+      newTransactions.push(row);
+    }
+  }
+  
+  // Apply row updates using batchUpdate
+  if (rowUpdates.length > 0) {
+    await _sheetsRequest(`/${_spreadsheetId}/values:batchUpdate`, {
+      method: "POST",
+      body: JSON.stringify({
+        valueInputOption: "RAW",
+        data: rowUpdates
+      })
+    });
+    console.log(`[Write] Updated ${rowUpdates.length} existing rows`);
+  }
+  
+  // Append new rows at the end
+  if (newTransactions.length > 0) {
+    const startRow = existingRows.length + 2;
+    const endRow = startRow + newTransactions.length - 1;
+    await _sheetsRequest(`/${_spreadsheetId}/values/Transaksi!A${startRow}:I${endRow}?valueInputOption=RAW`, {
+      method: "PUT",
+      body: JSON.stringify({ values: newTransactions })
+    });
+    console.log(`[Write] Appended ${newTransactions.length} new rows`);
+  }
+}
+
+// Batch delete transactions by ID
+async function _batchDeleteTransactions(idsToDelete) {
+  if (idsToDelete.length === 0) return;
+  
+  console.log(`[Write] Deleting ${idsToDelete.length} transactions`);
+  
+  // Read all data
+  const result = await _sheetsRequest(
+    `/${_spreadsheetId}/values/Transaksi!A2:I?majorDimension=ROWS`
+  );
+  const rows = result.values || [];
+  
+  // Filter out deleted rows
+  const deleteSet = new Set(idsToDelete);
+  const filteredRows = rows.filter(row => !deleteSet.has(row[0]));
+  
+  // Rewrite with filtered data
+  await _sheetsRequest(`/${_spreadsheetId}/values/Transaksi!A2:I?valueInputOption=RAW`, {
+    method: "PUT",
+    body: JSON.stringify({ values: filteredRows.length ? filteredRows : [[]] })
   });
 }
 

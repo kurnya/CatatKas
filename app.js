@@ -490,21 +490,29 @@ async function _autoPushToSheets() {
   // Cek apakah user sudah terhubung ke Google
   if (typeof isSignedIn !== "function" || !isSignedIn()) {
     // Belum terhubung atau sudah diputuskan - data hanya disimpan lokal
+    console.log("[Auto-Sync] User tidak terhubung ke Google, skip push");
     return;
   }
   
   // Cek apakah fungsi push tersedia
   if (typeof pushToSheets !== "function") {
+    console.log("[Auto-Sync] pushToSheets tidak tersedia");
     return;
   }
   
   try {
+    console.log(`[Auto-Sync] Memulai push ${state.transactions.length} transaksi ke Spreadsheet...`);
     // Push dengan silent mode - tidak menampilkan toast/notifikasi
     // Token akan di-refresh otomatis di dalam pushToSheets jika kadaluarsa
-    await pushToSheets(state, true);
+    const success = await pushToSheets(state, true);
+    if (success) {
+      console.log("[Auto-Sync] Push berhasil");
+    } else {
+      console.warn("[Auto-Sync] Push gagal (return false)");
+    }
   } catch (error) {
     // Log error tapi jangan ganggu user
-    console.warn("[Auto-Sync] Push gagal:", error);
+    console.error("[Auto-Sync] Push gagal dengan error:", error);
   }
 }
 
@@ -593,7 +601,7 @@ function fillSelect(select, values) {
   if (!uniqueValues.includes(current) && uniqueValues.length) select.value = uniqueValues[0];
 }
 
-function saveTransaction(event) {
+async function saveTransaction(event) {
   event.preventDefault();
   const rawAmount = elements.amount.value.replace(/\./g, "");
   const amount = Number(rawAmount);
@@ -638,10 +646,14 @@ function saveTransaction(event) {
   if (index >= 0) {
     state.transactions[index] = { ...state.transactions[index], ...transaction };
     showToast("Transaksi berhasil diperbarui.", "success");
+    console.log(`[Save] Update transaksi ID: ${transaction.id}`);
   } else {
     state.transactions.push({ ...transaction, createdAt: new Date().toISOString() });
     showToast("Transaksi berhasil disimpan.", "success");
+    console.log(`[Save] Tambah transaksi baru ID: ${transaction.id}`);
   }
+  
+  console.log(`[Save] Total transaksi: ${state.transactions.length}`);
 
   persist();
   resetForm();
@@ -649,7 +661,8 @@ function saveTransaction(event) {
   navigate("home");
   
   // Auto-push ke Google Spreadsheet jika terhubung
-  _autoPushToSheets();
+  console.log("[Save] Memulai auto-push ke Spreadsheet...");
+  await _autoPushToSheets();
 }
 
 function renderHome() {
@@ -1364,13 +1377,21 @@ async function deleteTransaction(id) {
     type: "danger"
   });
   if (!confirmed) return;
+  
+  console.log(`[Delete] Menghapus transaksi ID: ${id}`);
+  console.log(`[Delete] Sebelum hapus: ${state.transactions.length} transaksi`);
+  
   state.transactions = state.transactions.filter((item) => item.id !== id);
+  
+  console.log(`[Delete] Setelah hapus: ${state.transactions.length} transaksi`);
+  
   persist();
   renderAll();
   showToast("Transaksi berhasil dihapus.", "success");
   
   // Auto-push ke Google Spreadsheet jika terhubung
-  _autoPushToSheets();
+  console.log("[Delete] Memulai auto-push ke Spreadsheet...");
+  await _autoPushToSheets();
 }
 
 function resetForm() {
