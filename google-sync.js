@@ -709,8 +709,25 @@ async function _writeTransactions(transactions) {
     return isNew || isUpdated;
   });
   
-  // Find deleted transactions
-  const toDelete = [...previousIds].filter(id => !currentIds.has(id));
+  // Find deleted transactions (IDs that were tracked but no longer local)
+  const trackedDeletes = [...previousIds].filter(id => !currentIds.has(id));
+  
+  // Safety: also detect stale rows on sheet that aren't in local state.
+  // This catches cases where _lastSyncedTransactionIds is incomplete
+  // (e.g. after auto-pull or cross-device sync) and a deletion was missed.
+  let toDelete = trackedDeletes;
+  if (trackedDeletes.length === 0 && currentIds.size > 0) {
+    try {
+      const sheetIds = await _readSheetTransactionIds();
+      const staleIds = sheetIds.filter(id => !currentIds.has(id));
+      if (staleIds.length > 0) {
+        console.log(`[Write] Stale rows found on sheet (not in tracking): ${staleIds.length}`, staleIds);
+        toDelete = staleIds;
+      }
+    } catch (e) {
+      console.warn("[Write] Could not check for stale rows:", e);
+    }
+  }
   
   console.log(`[Write] Changes detected: ${toUpdate.length} updates, ${toDelete.length} deletes`);
   
@@ -935,6 +952,16 @@ async function _writeMetadata(appState) {
 }
 
 // ── INTERNAL: Read Data ───────────────────────
+
+// Read only transaction IDs from the sheet (column A) for reconciliation
+async function _readSheetTransactionIds() {
+  const result = await _sheetsRequest(
+    `/${_spreadsheetId}/values/Transaksi!A2:A?majorDimension=ROWS`
+  );
+  return (result.values || [])
+    .filter(row => row && row[0])
+    .map(row => row[0]);
+}
 
 async function _readTransactions() {
   const result = await _sheetsRequest(
