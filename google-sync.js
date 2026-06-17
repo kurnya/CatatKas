@@ -163,6 +163,9 @@ async function pushToSheets(appState, silent = false) {
   if (!silent) _onSyncStateChange?.(true);
 
   try {
+    // Pastikan token valid (akan auto-refresh jika expired)
+    await _ensureValidToken();
+    
     await _ensureSpreadsheet();
     await _writeTransactions(appState.transactions || []);
     await _writeSubCategories(appState.subCategories || {});
@@ -178,13 +181,21 @@ async function pushToSheets(appState, silent = false) {
     return true;
   } catch (err) {
     console.error("[Sync] Push error:", err);
-    if (!silent) {
-      if (_isAuthRefreshError(err)) _markTokenRefreshRequired();
-      const msg = _isAuthRefreshError(err)
-        ? TOKEN_REFRESH_ERROR_MESSAGE
-        : err?.message || "Gagal menyimpan data ke Google Spreadsheet.";
+    
+    // Jika token refresh gagal dan ini silent mode, jangan langsung disconnect
+    // Biarkan user tetap "terhubung" dan akan retry lagi di transaksi berikutnya
+    if (_isAuthRefreshError(err)) {
+      if (!silent) {
+        _markTokenRefreshRequired();
+        _onSyncComplete?.("push", false, TOKEN_REFRESH_ERROR_MESSAGE);
+      } else {
+        console.warn("[Sync] Token refresh failed in silent mode, will retry on next transaction");
+      }
+    } else if (!silent) {
+      const msg = err?.message || "Gagal menyimpan data ke Google Spreadsheet.";
       _onSyncComplete?.("push", false, msg);
     }
+    
     return false;
   } finally {
     _syncInProgress = false;
@@ -207,6 +218,9 @@ async function pullFromSheets() {
   _onSyncStateChange?.(true);
 
   try {
+    // Pastikan token valid (akan auto-refresh jika expired)
+    await _ensureValidToken();
+    
     const transactions = await _readTransactions();
     const subCategories = await _readSubCategories();
     const paymentMethods = await _readPaymentMethods();

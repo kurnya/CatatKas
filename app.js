@@ -480,6 +480,34 @@ function _renderSyncUI() {
   }
 }
 
+/**
+ * Auto-push ke Google Spreadsheet setelah transaksi berubah.
+ * Hanya push jika user sudah terhubung ke Google.
+ * Token akan di-refresh otomatis jika sudah kadaluarsa.
+ * Tidak menampilkan notifikasi (silent mode).
+ */
+async function _autoPushToSheets() {
+  // Cek apakah user sudah terhubung ke Google
+  if (typeof isSignedIn !== "function" || !isSignedIn()) {
+    // Belum terhubung atau sudah diputuskan - data hanya disimpan lokal
+    return;
+  }
+  
+  // Cek apakah fungsi push tersedia
+  if (typeof pushToSheets !== "function") {
+    return;
+  }
+  
+  try {
+    // Push dengan silent mode - tidak menampilkan toast/notifikasi
+    // Token akan di-refresh otomatis di dalam pushToSheets jika kadaluarsa
+    await pushToSheets(state, true);
+  } catch (error) {
+    // Log error tapi jangan ganggu user
+    console.warn("[Auto-Sync] Push gagal:", error);
+  }
+}
+
 async function _handlePullFromSheets() {
   if (typeof pullFromSheets !== "function") return;
   const data = await pullFromSheets();
@@ -619,6 +647,9 @@ function saveTransaction(event) {
   resetForm();
   renderAll();
   navigate("home");
+  
+  // Auto-push ke Google Spreadsheet jika terhubung
+  _autoPushToSheets();
 }
 
 function renderHome() {
@@ -1337,6 +1368,9 @@ async function deleteTransaction(id) {
   persist();
   renderAll();
   showToast("Transaksi berhasil dihapus.", "success");
+  
+  // Auto-push ke Google Spreadsheet jika terhubung
+  _autoPushToSheets();
 }
 
 function resetForm() {
