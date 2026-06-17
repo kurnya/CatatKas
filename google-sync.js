@@ -840,6 +840,18 @@ async function _batchDeleteTransactions(idsToDelete) {
 
   console.log(`[Write] Deleting ${idsToDelete.length} transactions:`, idsToDelete);
 
+  // Fetch spreadsheet metadata to get the correct sheet tab ID (gid) for "Transaksi"
+  const meta = await _sheetsRequest(
+    `/${_spreadsheetId}?fields=sheets(properties(sheetId,title))`
+  );
+  const transaksiSheet = (meta.sheets || []).find(
+    s => s.properties && s.properties.title === "Transaksi"
+  );
+  if (!transaksiSheet) {
+    throw new Error("Sheet tab 'Transaksi' not found in spreadsheet");
+  }
+  const sheetTabId = transaksiSheet.properties.sheetId;
+
   // Read only column A (IDs) to find row positions — minimal data transfer
   const result = await _sheetsRequest(
     `/${_spreadsheetId}/values/Transaksi!A2:A?majorDimension=ROWS`
@@ -870,7 +882,7 @@ async function _batchDeleteTransactions(idsToDelete) {
   const requests = sheetIndicesToDelete.map(index => ({
     deleteDimension: {
       range: {
-        sheetId: 0, // First sheet (Transaksi)
+        sheetId: sheetTabId,
         dimension: "ROWS",
         startIndex: index,
         endIndex: index + 1
