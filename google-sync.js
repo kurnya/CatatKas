@@ -517,9 +517,20 @@ async function _autoPullFromDiscoveredSpreadsheet() {
     }
 
     // Update synced transaction IDs so subsequent pushes use differential sync
+    // Must include both sheet IDs AND any local-only IDs kept by the merge callback.
+    // Without local-only IDs, a deletion of an unsynced transaction would appear as
+    // "no change" (6 sheet IDs vs 6 local IDs) instead of detecting the missing one.
     if (transactions && transactions.length > 0) {
       _lastSyncedTransactionIds = new Set(transactions.map(tx => tx.id));
-      console.log(`[Auto-Pull] Tracked ${_lastSyncedTransactionIds.size} synced transaction IDs`);
+      try {
+        const localState = JSON.parse(localStorage.getItem("catatan_keuangan_pwa_v1") || "{}");
+        if (localState.transactions && Array.isArray(localState.transactions)) {
+          for (const tx of localState.transactions) {
+            if (tx.id) _lastSyncedTransactionIds.add(tx.id);
+          }
+        }
+      } catch { /* ignore */ }
+      console.log(`[Auto-Pull] Tracked ${_lastSyncedTransactionIds.size} synced transaction IDs (sheet + local)`);
     }
 
     _lastSyncTime = new Date().toISOString();
