@@ -411,6 +411,42 @@ function initGoogleSheetsSync() {
     },
     onAuthChange: (isSignedIn) => {
       _renderSyncUI();
+    },
+    onDataMerge: (data) => {
+      // Smart merge: sheet data is source of truth for synced items
+      if (data.transactions && Array.isArray(data.transactions)) {
+        const sheetById = new Map(data.transactions.map(tx => [tx.id, tx]));
+        const localById = new Map(state.transactions.map(tx => [tx.id, tx]));
+        
+        // Start with local data (keep unsynced local transactions)
+        const merged = new Map(localById);
+        
+        // Add/update with sheet data (sheet is source of truth for synced items)
+        for (const [id, tx] of sheetById) {
+          merged.set(id, tx);
+        }
+        
+        state.transactions = Array.from(merged.values());
+        
+        console.log(`[Merge] Merged transactions: ${state.transactions.length} total`);
+      }
+      
+      // Merge subCategories
+      if (data.subCategories && typeof data.subCategories === "object") {
+        state.subCategories = { ...state.subCategories, ...data.subCategories };
+        console.log("[Merge] Merged subCategories");
+      }
+      
+      // Merge paymentMethods
+      if (data.paymentMethods && Array.isArray(data.paymentMethods)) {
+        const combined = [...new Set([...state.paymentMethods, ...data.paymentMethods])];
+        state.paymentMethods = combined;
+        console.log(`[Merge] Merged paymentMethods: ${state.paymentMethods.length} total`);
+      }
+      
+      // Save and re-render
+      persist();
+      renderAll();
     }
   });
 

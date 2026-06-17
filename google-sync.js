@@ -32,6 +32,7 @@ let _lastSyncedTransactionIds = new Set(); // Track which transactions were last
 let _onSyncStateChange = null;   // (isSyncing: bool) => void
 let _onSyncComplete = null;      // (direction: 'push'|'pull', success: bool, msg: string) => void
 let _onAuthChange = null;        // (isSignedIn: bool) => void
+let _onDataMerge = null;         // (data: {transactions, subCategories, paymentMethods}) => void
 
 // ── PUBLIC API ────────────────────────────────
 
@@ -39,6 +40,7 @@ function initGoogleSync(callbacks) {
   _onSyncStateChange = callbacks.onSyncStateChange || null;
   _onSyncComplete = callbacks.onSyncComplete || null;
   _onAuthChange = callbacks.onAuthChange || null;
+  _onDataMerge = callbacks.onDataMerge || null;
 
   // Restore saved state
   try {
@@ -337,6 +339,12 @@ function _handleTokenResponse(response) {
   if (_autoSyncInterval !== "off") {
     setAutoSyncInterval(_autoSyncInterval);
   }
+  
+  // Auto-discover existing spreadsheet for this account
+  if (!_spreadsheetId) {
+    console.log("[Sync] No spreadsheet ID found, searching for existing CatatKas spreadsheet...");
+    _discoverExistingSpreadsheet();
+  }
 }
 
 function _persistToken() {
@@ -362,6 +370,105 @@ async function _fetchUserEmail() {
     }
   } catch (e) {
     console.warn("[Sync] Failed to fetch user email:", e);
+  }
+}
+
+// Auto-discover existing CatatKas spreadsheet using Drive API
+async function _discoverExistingSpreadsheet() {
+  try {
+    await _ensureValidToken();
+    
+    console.log("[Discover] Searching for CatatKas spreadsheet in Google Drive...");
+    
+    // Search for spreadsheet with exact name
+    const query = encodeURIComponent(`mimeType='application/vnd.google-apps.spreadsheet' and name='${SPREADSHEET_NAME}' and trashed=false`);
+    const url = `${DRIVE_API}/files?q=${query}&fields=files(id,name,createdTime,modifiedTime)&orderBy=modifiedTime desc&pageSize=5`;
+    
+    const res = await fetch(url, {
+      headers: { Authorization: `Bearer ${_accessToken}` }
+    });
+    
+    if (!res.ok) {
+      console.warn("[Discover] Failed to search Drive:", res.status);
+      return;
+    }
+    
+    const data = await res.json();
+    const files = data.files || [];
+    
+    if (files.length === 0) {
+      console.log("[Discover] No existing CatatKas spreadsheet found. Will create new one on first push.");
+      return;
+    }
+    
+    // Use the most recently modified spreadsheet
+    const spreadsheet = files[0];
+    _spreadsheetId = spreadsheet.id;
+    _saveSyncMeta();
+    
+    console.log(`[Discover] Found existing spreadsheet: ${spreadsheet.name} (${spreadsheet.id})`);
+    console.log(`[Discover] Last modified: ${spreadsheet.modifiedTime}`);
+    
+    // Notify UI
+    _onAuthChange?.(true);
+    
+    // Auto-pull data from discovered spreadsheet
+    console.log("[Discover] Auto-pulling data from discovered spreadsheet...");
+    _autoPullFromDiscoveredSpreadsheet();
+    
+  } catch (err) {
+    console.warn("[Discover] Error searching for spreadsheet:", err);
+  }
+}
+
+// Auto-pull data when spreadsheet is discovered on new device
+async function _autoPullFromDiscoveredSpreadsheet() {
+  try {
+    if (!_spreadsheetId) {
+      console.log("[Auto-Pull] No spreadsheet ID, skipping");
+      return;
+    }
+    
+    console.log("[Auto-Pull] Checking if spreadsheet has data...");
+    
+    // Read transactions to check if spreadsheet has data
+    const result = await _sheetsRequest(
+      `/${_spreadsheetId}/values/Transaksi!A2:A?majorDimension=ROWS`
+    );
+    
+    const rows = result.values || [];
+    const hasData = rows.some(row => row[0]); // Check if any row has an ID
+    
+    if (!hasData) {
+      console.log("[Auto-Pull] Spreadsheet is empty, no need to pull");
+      return;
+    }
+    
+    console.log(`[Auto-Pull] Spreadsheet has ${rows.filter(r => r[0]).length} transactions. Pulling data...`);
+    
+    // Pull all data
+    const transactions = await _readTransactions();
+    const subCategories = await _readSubCategories();
+    const paymentMethods = await _readPaymentMethods();
+    
+    // Trigger callback to merge data in app.js
+    if (_onDataMerge && typeof _onDataMerge === "function") {
+      console.log("[Auto-Pull] Triggering data merge callback...");
+      _onDataMerge({ transactions, subCategories, paymentMethods });
+    }
+    
+    _lastSyncTime = new Date().toISOString();
+    _saveSyncMeta();
+    
+    console.log("[Auto-Pull] Successfully pulled and merged data from spreadsheet");
+    
+    // Show success notification (non-silent for first-time pull)
+    const txCount = transactions ? transactions.length : 0;
+    _onSyncComplete?.("pull", true, `Data berhasil dimuat dari Spreadsheet. ${txCount} transaksi disinkronkan.`);
+    
+  } catch (err) {
+    console.error("[Auto-Pull] Error pulling data:", err);
+    // Don't show error to user - not critical
   }
 }
 
