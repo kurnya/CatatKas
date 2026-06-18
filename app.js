@@ -671,13 +671,6 @@ async function saveTransaction(event) {
     updatedAt: new Date().toISOString()
   };
 
-  // Full pull from sheet before applying any change
-  // This ensures local state matches the sheet (remote deletions/additions are reflected)
-  if (typeof syncBeforeAction === "function") {
-    console.log("[Save] Syncing from spreadsheet before save...");
-    await syncBeforeAction();
-  }
-
   const index = state.transactions.findIndex((item) => item.id === transaction.id);
   if (index >= 0) {
     state.transactions[index] = { ...state.transactions[index], ...transaction };
@@ -1310,6 +1303,7 @@ async function editMasterItem(key, index) {
   persist();
   renderAll();
   showToast("Master data berhasil diedit.", "success");
+  await _autoPushToSheets();
 }
 
 async function deleteMasterItem(key, index) {
@@ -1331,6 +1325,7 @@ async function deleteMasterItem(key, index) {
   persist();
   renderAll();
   showToast("Master data berhasil dihapus.", "success");
+  await _autoPushToSheets();
 }
 
 async function addSubCategoryItem() {
@@ -1350,6 +1345,7 @@ async function addSubCategoryItem() {
   persist();
   renderAll();
   showToast("Master data berhasil ditambahkan.", "success");
+  await _autoPushToSheets();
 }
 
 async function editSubCategoryItem(type, index) {
@@ -1368,6 +1364,7 @@ async function editSubCategoryItem(type, index) {
   persist();
   renderAll();
   showToast("Master data berhasil diedit.", "success");
+  await _autoPushToSheets();
 }
 
 async function deleteSubCategoryItem(type, index) {
@@ -1386,6 +1383,7 @@ async function deleteSubCategoryItem(type, index) {
   persist();
   renderAll();
   showToast("Master data berhasil dihapus.", "success");
+  await _autoPushToSheets();
 }
 
 function editTransaction(id) {
@@ -1413,13 +1411,6 @@ async function deleteTransaction(id) {
     type: "danger"
   });
   if (!confirmed) return;
-
-  // Full pull from sheet before applying any change
-  // This ensures local state matches the sheet (remote deletions/additions are reflected)
-  if (typeof syncBeforeAction === "function") {
-    console.log("[Delete] Syncing from spreadsheet before delete...");
-    await syncBeforeAction();
-  }
 
   console.log(`[Delete] Menghapus transaksi ID: ${id}`);
   console.log(`[Delete] Sebelum hapus: ${state.transactions.length} transaksi`);
@@ -1469,6 +1460,7 @@ async function resetMasterData() {
   persist();
   renderAll();
   showToast("Master data berhasil direset.", "success");
+  await _autoPushToSheets();
 }
 
 async function deleteAllTransactions() {
@@ -1484,6 +1476,7 @@ async function deleteAllTransactions() {
   persist();
   renderAll();
   showToast("Semua transaksi berhasil dihapus.", "success");
+  await _autoPushToSheets();
 }
 
 function renderOfflineStatus() {

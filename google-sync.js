@@ -72,30 +72,38 @@ function initGoogleSync(callbacks) {
   // Token will be silently refreshed when needed
   if (_accessToken) {
     _onAuthChange?.(true);
-    // Try silent refresh in background if token expired
-    if (Date.now() >= _tokenExpiry) {
-      _trySilentRefresh()
-        .then(() => {
-          // After refresh, trigger discovery if no spreadsheet ID (new device with restored token)
-          if (!_spreadsheetId) {
-            console.log("[Sync] Token refreshed, no spreadsheet ID — triggering background discovery...");
-            _discoverExistingSpreadsheet();
-          }
-        })
-        .catch(() => {
-          // Refresh failed but don't clear token — might be network issue
-          // Will retry on next sync attempt
-          console.warn("[Sync] Token refresh failed, will retry on next sync");
-        });
-    } else if (!_spreadsheetId) {
-      // Token still valid but no spreadsheet ID (e.g. new device with restored token)
-      console.log("[Sync] Restored token valid, no spreadsheet ID — triggering background discovery...");
-      _discoverExistingSpreadsheet();
-    }
     if (_autoSyncEnabled) setAutoSyncEnabled(true);
   }
 
   _initGoogleIdentityServices();
+}
+
+// Called after GIS script loads — handles token refresh and discovery
+function _onGisReady() {
+  if (!_accessToken) return;
+
+  if (Date.now() >= _tokenExpiry) {
+    console.log("[Sync] Restored token expired, attempting silent refresh...");
+    _trySilentRefresh()
+      .then(() => {
+        console.log("[Sync] Silent refresh succeeded");
+        if (!_spreadsheetId) {
+          console.log("[Sync] No spreadsheet ID — triggering background discovery...");
+          _discoverExistingSpreadsheet();
+        }
+      })
+      .catch((err) => {
+        console.warn("[Sync] Silent refresh failed:", err?.message || err);
+        console.log("[Sync] Marking as disconnected — user must sign in again");
+        _onAuthChange?.(false);
+      });
+  } else {
+    console.log("[Sync] Restored token still valid");
+    if (!_spreadsheetId) {
+      console.log("[Sync] No spreadsheet ID — triggering background discovery...");
+      _discoverExistingSpreadsheet();
+    }
+  }
 }
 
 function isSignedIn() {
@@ -251,9 +259,6 @@ async function pushToSheets(appState, silent = false) {
     await _ensureValidToken();
     
     await _ensureSpreadsheet();
-
-    // Full pull before push: ensures local state matches sheet exactly
-    await syncBeforeAction();
 
     console.log("[Sync] Writing transactions to spreadsheet...");
     await _writeTransactions(appState.transactions || []);
@@ -459,10 +464,8 @@ function _initGoogleIdentityServices() {
         console.error("[Sync] Auth error:", err);
       }
     );
-    // Auto-restore if we had a spreadsheet
-    if (_spreadsheetId) {
-      _onAuthChange?.(true);
-    }
+    // GIS is ready — handle token refresh and discovery
+    _onGisReady();
     return;
   }
   // Retry after a short delay if GIS hasn't loaded yet
