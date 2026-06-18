@@ -1407,8 +1407,10 @@ async function addMasterItem(key) {
     addSubCategoryItem();
     return;
   }
-  showToast("Kategori utama sudah ditentukan dan tidak bisa diubah.", "info");
-  return;
+  if (key === "categories") {
+    showToast("Kategori utama sudah ditentukan dan tidak bisa diubah.", "info");
+    return;
+  }
   const result = await showFormModal({
     title: "Tambah Metode Pembayaran",
     message: "Masukkan nama metode pembayaran baru.",
@@ -1422,6 +1424,7 @@ async function addMasterItem(key) {
   persist();
   renderAll();
   showToast("Master data berhasil ditambahkan.", "success");
+  await _autoPushToSheets();
 }
 
 async function editMasterItem(key, index) {
