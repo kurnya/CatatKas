@@ -112,6 +112,34 @@ h2 {
   display: block;
 }
 
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.sync-icon-btn {
+  width: 38px;
+  height: 38px;
+  border-color: rgba(15, 118, 110, 0.15);
+  background: transparent;
+  box-shadow: none;
+}
+
+.sync-icon-btn:hover {
+  background: var(--soft);
+}
+
+.sync-icon-btn.syncing svg {
+  animation: spin-sync 0.8s linear infinite;
+}
+
+@keyframes spin-sync {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
 .eyebrow,
 .soft-label {
   display: block;
@@ -774,6 +802,63 @@ select:focus {
   gap: 4px;
 }
 
+.settings-heading h2 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.heading-icon {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  opacity: 0.6;
+}
+
+.sync-compact-info {
+  display: grid;
+  gap: 6px;
+}
+
+.sync-compact-info .sync-status-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.sync-compact-info .sync-user-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.sync-compact-info .sync-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.sync-helper {
+  margin: 4px 0 0;
+  font-size: 13px !important;
+  opacity: 1 !important;
+  color: var(--muted);
+}
+
+.offline-row {
+  gap: 12px;
+}
+
+.offline-row .offline-status-badge {
+  flex-shrink: 0;
+}
+
 .settings-list {
   display: grid;
   gap: 9px;
@@ -1010,15 +1095,6 @@ select:focus {
   flex-wrap: wrap;
 }
 
-.offline-status-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-weight: 700;
-  font-size: 0.9rem;
-  margin-bottom: 4px;
-}
-
 .offline-status-badge {
   display: inline-block;
   padding: 3px 10px;
@@ -1048,15 +1124,6 @@ select:focus {
   align-items: center;
   gap: 8px;
   font-size: 0.875rem;
-}
-
-.sync-user-row {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 0.82rem;
-  color: var(--muted, #64748b);
-  margin-top: -4px;
 }
 
 .sync-user-row svg {
@@ -1097,15 +1164,6 @@ select:focus {
 @keyframes pulse {
   from { opacity: 1; }
   to { opacity: 0.5; }
-}
-
-.sync-info {
-  display: grid;
-  gap: 4px;
-  font-size: 0.85rem;
-  padding: 8px 12px;
-  background: var(--soft, #f8fafc);
-  border-radius: 8px;
 }
 
 .sync-info a {
@@ -1521,6 +1579,15 @@ body.theme-dark .app-modal,
 body.theme-dark .bottom-sheet,
 body.theme-dark .bottom-nav {
   background: var(--panel);
+}
+
+body.theme-dark .sync-icon-btn {
+  background: transparent;
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+body.theme-dark .sync-icon-btn:hover {
+  background: rgba(255, 255, 255, 0.06);
 }
 
 body.theme-dark .summary-card,

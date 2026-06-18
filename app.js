@@ -147,7 +147,8 @@ const elements = {
   syncSignInButton: document.querySelector("#syncSignInButton"),
   syncPushButton: document.querySelector("#syncPushButton"),
   syncPullButton: document.querySelector("#syncPullButton"),
-  syncSignOutButton: document.querySelector("#syncSignOutButton")
+  syncSignOutButton: document.querySelector("#syncSignOutButton"),
+  headerSyncButton: document.querySelector("#headerSyncButton")
 };
 
 init();
@@ -266,6 +267,54 @@ function bindEvents() {
   // Header help button opens app guidance.
   elements.installButton.addEventListener("click", () => {
     showHelpModal();
+  });
+
+  // Header sync button: bidirectional sync (pull + merge + push)
+  elements.headerSyncButton.addEventListener("click", async () => {
+    if (typeof isSignedIn !== "function" || !isSignedIn()) {
+      showToast("Anda belum masuk ke akun Google.", "warning");
+      return;
+    }
+    if (typeof pushToSheets !== "function" || typeof pullFromSheets !== "function") {
+      showToast("Layanan sinkronisasi belum tersedia.", "warning");
+      return;
+    }
+    const btn = elements.headerSyncButton;
+    btn.classList.add("syncing");
+    btn.disabled = true;
+    try {
+      // Pull from sheet and merge
+      const data = await pullFromSheets();
+      if (data) {
+        // Merge: sheet data overrides local for matching IDs, keep local-only
+        if (data.transactions && Array.isArray(data.transactions)) {
+          const sheetById = new Map(data.transactions.map(tx => [tx.id, tx]));
+          const localById = new Map(state.transactions.map(tx => [tx.id, tx]));
+          const merged = new Map(sheetById);
+          for (const [id, tx] of localById) {
+            if (!sheetById.has(id)) merged.set(id, tx);
+          }
+          state.transactions = Array.from(merged.values());
+        }
+        if (data.subCategories && Object.keys(data.subCategories).length > 0) {
+          state.subCategories = { ...state.subCategories, ...data.subCategories };
+        }
+        if (data.paymentMethods && Array.isArray(data.paymentMethods)) {
+          state.paymentMethods = data.paymentMethods;
+        }
+        persist();
+        renderAll();
+      }
+      // Push local state to sheet
+      await pushToSheets(state, true);
+      showToast("Data berhasil disinkronkan.", "success");
+    } catch (err) {
+      console.error("[Header Sync] Error:", err);
+      showToast("Gagal menyinkronkan data.", "warning");
+    } finally {
+      btn.classList.remove("syncing");
+      btn.disabled = false;
+    }
   });
 
   elements.downloadPlatformButtons.forEach((button) => {
@@ -462,6 +511,7 @@ function _renderSyncUI() {
     elements.syncPushButton.hidden = false;
     elements.syncPullButton.hidden = false;
     elements.syncSignOutButton.hidden = false;
+    elements.headerSyncButton.hidden = false;
 
     // Show user email if available
     const email = typeof getUserEmail === "function" ? getUserEmail() : null;
@@ -502,6 +552,7 @@ function _renderSyncUI() {
     elements.syncInfoBlock.hidden = true;
     elements.syncSheetLink.hidden = true;
     elements.syncUserRow.hidden = true;
+    elements.headerSyncButton.hidden = true;
   }
 
   if (typeof isAutoSyncEnabled === "function") {
@@ -1485,8 +1536,8 @@ function renderOfflineStatus() {
   elements.offlineStatusLabel.className = "offline-status-badge " + (isOnline ? "online" : "offline");
   elements.offlineStatusLabel.textContent = isOnline ? "● Online" : "● Offline";
   elements.offlineStatusText.textContent = isOnline
-    ? "Terhubung ke internet. Update aplikasi tersedia."
-    : "Tidak ada koneksi. CatatKas tetap bisa digunakan offline.";
+    ? "Terhubung ke internet."
+    : "Tidak ada koneksi. Data tersimpan lokal.";
 }
 
 function getResolvedTheme() {

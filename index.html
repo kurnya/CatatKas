@@ -24,13 +24,23 @@
         <p class="eyebrow">CatatKas</p>
         <h1 id="pageTitle">Beranda</h1>
       </div>
-      <button class="install-info-btn" id="installButton" aria-label="Bantuan CatatKas" title="Bantuan aplikasi">
-        <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <circle cx="12" cy="12" r="10"/>
-          <path d="M9.1 9a3 3 0 1 1 5.7 1.35c-.7 1.05-1.8 1.35-2.35 2.15"/>
-          <path d="M12 17h.01"/>
-        </svg>
-      </button>
+      <div class="header-actions">
+        <button class="install-info-btn sync-icon-btn" id="headerSyncButton" aria-label="Sinkronkan data" title="Sinkronkan data" hidden>
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M21 2v6h-6"/>
+            <path d="M3 12a9 9 0 0 1 15-6.7L21 8"/>
+            <path d="M3 22v-6h6"/>
+            <path d="M21 12a9 9 0 0 1-15 6.7L3 16"/>
+          </svg>
+        </button>
+        <button class="install-info-btn" id="installButton" aria-label="Bantuan CatatKas" title="Bantuan aplikasi">
+          <svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="10"/>
+            <path d="M9.1 9a3 3 0 1 1 5.7 1.35c-.7 1.05-1.8 1.35-2.35 2.15"/>
+            <path d="M12 17h.01"/>
+          </svg>
+        </button>
+      </div>
     </header>
 
     <main class="app-shell">
@@ -186,43 +196,33 @@
       </section>
 
       <section class="page" id="settingsPage" data-title="Pengaturan">
-        <section class="settings-card panel">
-          <div class="settings-heading">
-            <h2>Mode Offline</h2>
-            <p class="helper-text">CatatKas dapat digunakan offline setelah aplikasi pernah dibuka saat online.</p>
-          </div>
-          <div class="offline-status-row">
-            <span>Status:</span>
-            <span class="offline-status-badge online" id="offlineStatusLabel">● Online</span>
-          </div>
-          <p class="helper-text" id="offlineStatusText">Terhubung ke internet. Update aplikasi tersedia.</p>
-        </section>
 
+        <!-- 1. Sinkronisasi Data -->
         <section class="settings-card panel sync-card">
           <div class="settings-heading">
-            <h2>Sinkronisasi Data</h2>
+            <h2><svg class="heading-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2v6h-6"/><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M3 22v-6h6"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/></svg>Sinkronisasi Data</h2>
             <p class="helper-text">Simpan data keuangan Anda di Google Spreadsheet pribadi sebagai cadangan otomatis.</p>
           </div>
-          <div class="sync-status-row">
-            <span>Status:</span>
-            <span class="sync-badge" id="syncStatusBadge">● Belum terhubung</span>
-          </div>
-          <div class="sync-user-row" id="syncUserRow" hidden>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-            <span id="syncUserEmail">-</span>
-          </div>
-          <div class="sync-info" id="syncInfoBlock" hidden>
-            <span>Terakhir disinkronkan:</span>
-            <strong id="syncLastTime">-</strong>
-            <a id="syncSheetLink" href="#" target="_blank" rel="noopener" hidden>Buka Spreadsheet ↗</a>
+          <div class="sync-compact-info">
+            <div class="sync-status-row">
+              <span class="sync-badge" id="syncStatusBadge">● Belum terhubung</span>
+              <span class="sync-user-row" id="syncUserRow" hidden>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                <span id="syncUserEmail">-</span>
+              </span>
+            </div>
+            <div class="sync-info" id="syncInfoBlock" hidden>
+              <span>Terakhir sinkron: <strong id="syncLastTime">-</strong></span>
+              <a id="syncSheetLink" href="#" target="_blank" rel="noopener" hidden>Buka Spreadsheet ↗</a>
+            </div>
           </div>
           <div class="sync-toggle-row">
             <label class="sync-switch">
-              <span>Sinkronisasi otomatis:</span>
+              <span>Sinkronisasi otomatis</span>
               <input type="checkbox" id="syncAutoToggle" class="toggle-input">
               <span class="toggle-slider"></span>
             </label>
-            <p class="helper-text" style="margin:4px 0 0;font-size:12px;opacity:0.7;">Data otomatis dikirim & dimuat setiap ada perubahan.</p>
+            <p class="helper-text sync-helper">Data otomatis dikirim & dimuat setiap ada perubahan.</p>
           </div>
           <div class="settings-actions sync-actions">
             <button type="button" class="primary-button compact-action" id="syncSignInButton">Masuk dengan Google</button>
@@ -232,54 +232,10 @@
           </div>
         </section>
 
+        <!-- 2. Preferensi Aplikasi -->
         <section class="settings-card panel">
           <div class="settings-heading">
-            <h2>Data & Backup</h2>
-            <p class="helper-text">Simpan cadangan data atau unduh riwayat transaksi.</p>
-          </div>
-          <div class="settings-list">
-            <div class="settings-row">
-              <div>
-                <strong>Export JSON</strong>
-                <span>Backup seluruh data aplikasi.</span>
-              </div>
-              <button type="button" class="primary-button compact-action" id="exportButton">Export</button>
-            </div>
-            <div class="settings-row">
-              <div>
-                <strong>Import JSON</strong>
-                <span>Pulihkan data dari file backup.</span>
-              </div>
-              <label class="file-button compact-action">
-                Import
-                <input type="file" id="importFile" accept="application/json">
-              </label>
-            </div>
-            <div class="settings-row">
-              <div>
-                <strong>Export CSV</strong>
-                <span>Unduh riwayat transaksi untuk Excel.</span>
-              </div>
-              <button type="button" class="ghost-button compact-action" id="exportCsvButton">CSV</button>
-            </div>
-          </div>
-        </section>
-
-        <section class="settings-card panel">
-          <div class="settings-heading">
-            <h2>Master Data</h2>
-            <p class="helper-text">Kelola pilihan kategori, subkategori, dan metode pembayaran.</p>
-          </div>
-          <div class="settings-actions">
-            <button type="button" class="ghost-button" data-nav="master">Kelola Kategori</button>
-            <button type="button" class="ghost-button" data-nav="master">Kelola Subkategori</button>
-            <button type="button" class="ghost-button" data-nav="master">Kelola Metode Pembayaran</button>
-          </div>
-        </section>
-
-        <section class="settings-card panel">
-          <div class="settings-heading">
-            <h2>Preferensi Aplikasi</h2>
+            <h2><svg class="heading-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>Preferensi Aplikasi</h2>
             <p class="helper-text">Preferensi disimpan di perangkat ini.</p>
           </div>
           <div class="preference-grid">
@@ -312,35 +268,62 @@
           </div>
         </section>
 
-        <section class="settings-card panel danger-zone">
+        <!-- 3. Data & Backup (with offline status merged) -->
+        <section class="settings-card panel">
           <div class="settings-heading">
-            <h2>Zona Berbahaya</h2>
-            <p class="helper-text">Aksi di bawah membutuhkan konfirmasi.</p>
+            <h2><svg class="heading-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Data & Backup</h2>
+            <p class="helper-text">Simpan cadangan data atau unduh riwayat transaksi.</p>
+          </div>
+          <div class="settings-list">
+            <div class="settings-row offline-row">
+              <div>
+                <strong>Status koneksi</strong>
+                <span id="offlineStatusText">Terhubung ke internet.</span>
+              </div>
+              <span class="offline-status-badge online" id="offlineStatusLabel">● Online</span>
+            </div>
+            <div class="settings-row">
+              <div>
+                <strong>Export JSON</strong>
+                <span>Backup seluruh data aplikasi.</span>
+              </div>
+              <button type="button" class="primary-button compact-action" id="exportButton">Export</button>
+            </div>
+            <div class="settings-row">
+              <div>
+                <strong>Import JSON</strong>
+                <span>Pulihkan data dari file backup.</span>
+              </div>
+              <label class="file-button compact-action">
+                Import
+                <input type="file" id="importFile" accept="application/json">
+              </label>
+            </div>
+            <div class="settings-row">
+              <div>
+                <strong>Export CSV</strong>
+                <span>Unduh riwayat transaksi untuk Excel.</span>
+              </div>
+              <button type="button" class="ghost-button compact-action" id="exportCsvButton">CSV</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- 4. Master Data -->
+        <section class="settings-card panel">
+          <div class="settings-heading">
+            <h2><svg class="heading-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>Master Data</h2>
+            <p class="helper-text">Kelola pilihan kategori, subkategori, dan metode pembayaran.</p>
           </div>
           <div class="settings-actions">
-            <button type="button" class="danger-button" id="resetMasterButton">Reset Master Data</button>
-            <button type="button" class="danger-button" id="deleteTransactionsButton">Hapus Semua Transaksi</button>
+            <button type="button" class="ghost-button" data-nav="master">Kelola Master Data</button>
           </div>
         </section>
 
-        <section class="settings-card panel update-card">
-          <div class="settings-heading">
-            <h2>Update Aplikasi</h2>
-            <p class="helper-text">Update hanya memperbarui file aplikasi. Data transaksi tetap tersimpan di perangkat Anda.</p>
-          </div>
-          <div class="update-info">
-            <strong id="updateAppName">CatatKas v1.1.2</strong>
-            <span>Status: <b id="updateStatusText">Menggunakan versi terbaru</b></span>
-          </div>
-          <div class="settings-actions update-actions">
-            <button type="button" class="ghost-button compact-action" id="checkUpdateButton">Cek Update</button>
-            <button type="button" class="primary-button compact-action" id="updateNowButton" hidden>Update Sekarang</button>
-          </div>
-        </section>
-
+        <!-- 5. Download Aplikasi -->
         <section class="settings-card panel download-card" id="downloadAppSection">
           <div class="settings-heading">
-            <h2>Download Aplikasi</h2>
+            <h2><svg class="heading-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>Download Aplikasi</h2>
             <p class="helper-text">Install CatatKas sebagai aplikasi di perangkat Anda agar bisa digunakan offline dan diakses lebih cepat dari layar utama.</p>
           </div>
           <div class="download-info-row">
@@ -367,9 +350,38 @@
           <p class="helper-text" id="installHelperText">Pilih platform untuk melihat panduan instalasi yang sesuai.</p>
         </section>
 
+        <!-- 6. Update Aplikasi -->
+        <section class="settings-card panel update-card">
+          <div class="settings-heading">
+            <h2><svg class="heading-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>Update Aplikasi</h2>
+            <p class="helper-text">Update hanya memperbarui file aplikasi. Data transaksi tetap tersimpan di perangkat Anda.</p>
+          </div>
+          <div class="update-info">
+            <strong id="updateAppName">CatatKas v1.1.2</strong>
+            <span>Status: <b id="updateStatusText">Menggunakan versi terbaru</b></span>
+          </div>
+          <div class="settings-actions update-actions">
+            <button type="button" class="ghost-button compact-action" id="checkUpdateButton">Cek Update</button>
+            <button type="button" class="primary-button compact-action" id="updateNowButton" hidden>Update Sekarang</button>
+          </div>
+        </section>
+
+        <!-- 7. Zona Berbahaya -->
+        <section class="settings-card panel danger-zone">
+          <div class="settings-heading">
+            <h2><svg class="heading-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>Zona Berbahaya</h2>
+            <p class="helper-text">Aksi di bawah membutuhkan konfirmasi.</p>
+          </div>
+          <div class="settings-actions">
+            <button type="button" class="danger-button" id="resetMasterButton">Reset Master Data</button>
+            <button type="button" class="danger-button" id="deleteTransactionsButton">Hapus Semua Transaksi</button>
+          </div>
+        </section>
+
+        <!-- 8. Tentang Aplikasi -->
         <section class="settings-card panel about-card">
           <div class="settings-heading">
-            <h2>Tentang Aplikasi</h2>
+            <h2><svg class="heading-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>Tentang Aplikasi</h2>
           </div>
           <div class="about-list">
             <div><span>Nama aplikasi</span><strong>CatatKas</strong></div>
