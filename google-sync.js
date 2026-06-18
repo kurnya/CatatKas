@@ -269,6 +269,9 @@ async function pushToSheets(appState, silent = false) {
     console.log("[Sync] Writing metadata...");
     await _writeMetadata(appState);
 
+    // Apply formatting (borders, headers, column widths) — non-critical
+    await _applySheetFormatting();
+
     const syncedAt = new Date().toISOString();
     _lastSyncTime = syncedAt;
     _lastPushTime = syncedAt;
@@ -774,6 +777,153 @@ async function _ensureSpreadsheet() {
       ]
     })
   });
+}
+
+// ── INTERNAL: Sheet Formatting ────────────────
+// Applies borders, header styling, and auto-fit column widths to all sheets.
+async function _applySheetFormatting() {
+  try {
+  console.log("[Format] Applying sheet formatting (borders, headers, column widths)...");
+
+  // 1. Get sheet tab metadata (sheetId/gid for each tab)
+  const meta = await _sheetsRequest(
+    `/${_spreadsheetId}?fields=sheets(properties(sheetId,title))`
+  );
+  const sheetMap = {};
+  (meta.sheets || []).forEach(s => {
+    sheetMap[s.properties.title] = s.properties.sheetId;
+  });
+
+  // 2. Get data extents for each sheet to determine row counts
+  const ranges = ["Transaksi!A:I", "Subkategori!A:B", "Metode Pembayaran!A:A", "Metadata!A:B"];
+  const dataResp = await _sheetsRequest(`/${_spreadsheetId}/values:batchGet?ranges=${ranges.map(encodeURIComponent).join("&ranges=")}`);
+  const valueRanges = dataResp.valueRanges || [];
+
+  // 3. Build all formatting requests
+  const requests = [];
+  const headerBgColor = { red: 0.18, green: 0.47, blue: 0.78 }; // Professional blue
+  const headerFgColor = { red: 1, green: 1, blue: 1 }; // White text
+  const borderStyle = { style: "SOLID", width: 1, color: { red: 0.65, green: 0.65, blue: 0.65 } };
+  const thickBorder = { style: "SOLID", width: 2, color: { red: 0.18, green: 0.47, blue: 0.78 } };
+
+  const sheetConfigs = [
+    { name: "Transaksi", cols: 9 },
+    { name: "Subkategori", cols: 2 },
+    { name: "Metode Pembayaran", cols: 1 },
+    { name: "Metadata", cols: 2 }
+  ];
+
+  // ── Clear existing conditional formatting rules to avoid duplicates on re-format ──
+  const metaFull = await _sheetsRequest(
+    `/${_spreadsheetId}?fields=sheets(properties(sheetId,title),conditionalFormats)`
+  );
+  const cfMap = {};
+  (metaFull.sheets || []).forEach(s => {
+    cfMap[s.properties.sheetId] = (s.conditionalFormats || []).length;
+  });
+
+  for (const cfg of sheetConfigs) {
+    const sheetId = sheetMap[cfg.name];
+    if (sheetId === undefined) continue;
+    const ruleCount = cfMap[sheetId] || 0;
+    // Delete from highest index to lowest to avoid index shift
+    for (let idx = ruleCount - 1; idx >= 0; idx--) {
+      requests.push({ deleteConditionalFormatRule: { sheetId, index: idx } });
+    }
+  }
+
+  for (let i = 0; i < sheetConfigs.length; i++) {
+    const cfg = sheetConfigs[i];
+    const sheetId = sheetMap[cfg.name];
+    if (sheetId === undefined) continue;
+
+    const rowCount = (valueRanges[i]?.values?.length) || 1;
+    const totalRows = Math.max(rowCount, 1);
+    if (totalRows < 1) continue;
+
+    // ── Header row: bold text, colored background, centered ──
+    requests.push({
+      repeatCell: {
+        range: { sheetId, startRowIndex: 0, endRowIndex: 1, startColumnIndex: 0, endColumnIndex: cfg.cols },
+        cell: {
+          userEnteredFormat: {
+            textFormat: { bold: true, fontSize: 11, foregroundColor: headerFgColor },
+            backgroundColor: headerBgColor,
+            horizontalAlignment: "CENTER",
+            verticalAlignment: "MIDDLE",
+            borders: {
+              top: thickBorder, bottom: thickBorder,
+              left: { style: "SOLID", width: 1, color: { red: 0.65, green: 0.65, blue: 0.65 } },
+              right: { style: "SOLID", width: 1, color: { red: 0.65, green: 0.65, blue: 0.65 } }
+            }
+          }
+        },
+        fields: "userEnteredFormat(backgroundColor,textFormat,horizontalAlignment,verticalAlignment,borders)"
+      }
+    });
+
+    // ── Header row height: slightly taller ──
+    requests.push({
+      updateDimensionProperties: {
+        range: { sheetId, dimension: "ROWS", startIndex: 0, endIndex: 1 },
+        properties: { pixelSize: 32 },
+        fields: "pixelSize"
+      }
+    });
+
+    // ── Data cells: borders on all sides ──
+    if (totalRows > 1) {
+      requests.push({
+        repeatCell: {
+          range: { sheetId, startRowIndex: 1, endRowIndex: totalRows, startColumnIndex: 0, endColumnIndex: cfg.cols },
+          cell: {
+            userEnteredFormat: {
+              textFormat: { fontSize: 10 },
+              verticalAlignment: "MIDDLE",
+              borders: {
+                top: borderStyle, bottom: borderStyle,
+                left: borderStyle, right: borderStyle
+              }
+            }
+          },
+          fields: "userEnteredFormat(textFormat,verticalAlignment,borders)"
+        }
+      });
+
+      // ── Alternate row shading for readability (single request) ──
+      requests.push({
+        addConditionalFormatRule: {
+          rule: {
+            ranges: [{ sheetId, startRowIndex: 1, endRowIndex: totalRows, startColumnIndex: 0, endColumnIndex: cfg.cols }],
+            booleanRule: {
+              condition: { type: "FORMULA", values: [{ userEnteredValue: "=ISODD(ROW())" }] },
+              format: { backgroundColor: { red: 0.93, green: 0.95, blue: 0.98 } }
+            }
+          },
+          index: 0
+        }
+      });
+    }
+
+    // ── Auto-resize all columns to fit content ──
+    requests.push({
+      autoResizeDimensions: {
+        dimensions: { sheetId, dimension: "COLUMNS", startIndex: 0, endIndex: cfg.cols }
+      }
+    });
+  }
+
+  // 4. Send all formatting in one batchUpdate
+  if (requests.length > 0) {
+    await _sheetsRequest(`/${_spreadsheetId}:batchUpdate`, {
+      method: "POST",
+      body: JSON.stringify({ requests })
+    });
+    console.log(`[Format] Applied ${requests.length} formatting requests`);
+  }
+  } catch (err) {
+    console.warn("[Format] Sheet formatting failed (non-critical):", err?.message || err);
+  }
 }
 
 // ── INTERNAL: Write Data ──────────────────────
