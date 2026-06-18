@@ -173,7 +173,7 @@ h2 {
 .stat-card {
   background: var(--panel);
   border: 1px solid var(--line);
-  border-radius: 16px;
+  border-radius: 14px;
   box-shadow: var(--shadow);
 }
 
@@ -193,7 +193,7 @@ h2 {
   background: var(--panel);
   border: 1px solid var(--line);
   min-height: 60px;
-  border-radius: 16px;
+  border-radius: 14px;
   padding: 9px 11px 9px 12px;
   box-shadow: var(--shadow-soft);
 }
@@ -223,7 +223,7 @@ h2 {
 .stat-card {
   display: grid;
   gap: 4px;
-  padding: 11px 12px;
+  padding: 12px;
 }
 
 .summary-card span,
@@ -241,12 +241,18 @@ h2 {
 }
 
 .balance-card {
-  background: #fff;
+  gap: 7px;
+  min-height: 92px;
+  align-content: center;
+  background: linear-gradient(135deg, #ffffff 0%, #ecfdf5 100%);
+  border-color: rgba(15, 118, 110, 0.24);
   color: var(--text);
 }
 
 .balance-card strong {
   color: var(--brand-dark);
+  font-size: clamp(1.55rem, 7vw, 2.1rem);
+  letter-spacing: 0;
 }
 
 .income-text {
@@ -404,14 +410,15 @@ select:focus {
 }
 
 .close-sheet-button {
+  display: grid;
+  place-items: center;
   width: 38px;
   height: 38px;
   border: 1px solid var(--line);
-  border-radius: 13px;
+  border-radius: 12px;
   background: #f7faf9;
   color: var(--text);
   cursor: pointer;
-  font-weight: 950;
 }
 
 .sheet-content {
@@ -603,6 +610,8 @@ select:focus {
   position: absolute;
   top: 12px;
   right: 12px;
+  display: grid;
+  place-items: center;
   width: 36px;
   height: 36px;
   border: 1px solid var(--line);
@@ -610,7 +619,6 @@ select:focus {
   background: #f7faf9;
   color: var(--text);
   cursor: pointer;
-  font-weight: 950;
 }
 
 .modal-status-icon {
@@ -797,6 +805,19 @@ select:focus {
   gap: 12px;
 }
 
+.settings-group-title {
+  margin: 10px 2px 0;
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.settings-group-title:first-child {
+  margin-top: 0;
+}
+
 .settings-heading {
   display: grid;
   gap: 4px;
@@ -845,7 +866,7 @@ select:focus {
 }
 
 .sync-helper {
-  margin: 4px 0 0;
+  margin: 0;
   font-size: 13px !important;
   opacity: 1 !important;
   color: var(--muted);
@@ -1173,15 +1194,15 @@ select:focus {
 }
 
 .sync-toggle-row {
-  display: flex;
-  align-items: center;
+  display: grid;
+  gap: 7px;
 }
 
 .sync-switch {
   display: flex;
   flex-direction: row;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
   gap: 12px;
   font-size: 0.875rem;
   cursor: pointer;
@@ -1250,13 +1271,14 @@ select:focus {
   padding: 10px 11px;
   background: #fff;
   border: 1px solid var(--line);
-  border-radius: 14px;
+  border-radius: 12px;
   box-shadow: var(--shadow-soft);
 }
 
 .transaction-card {
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: start;
+  column-gap: 10px;
 }
 
 .transaction-main {
@@ -1275,28 +1297,53 @@ select:focus {
 .transaction-meta {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px;
+  gap: 5px;
   margin-top: 6px;
   color: var(--muted);
-  font-size: 0.73rem;
+  font-size: 0.74rem;
+  line-height: 1.25;
 }
 
 .transaction-meta span {
-  border-radius: 999px;
-  background: #f4f6f5;
-  padding: 3px 7px;
+  display: inline-flex;
+  align-items: center;
+}
+
+.transaction-meta span + span::before {
+  content: "";
+  width: 3px;
+  height: 3px;
+  margin-right: 5px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.48;
 }
 
 .transaction-side {
   display: grid;
   justify-items: end;
   align-content: start;
-  gap: 8px;
+  gap: 6px;
 }
 
 .transaction-amount {
   font-weight: 950;
   font-size: 0.95rem;
+  white-space: nowrap;
+}
+
+.payment-badge {
+  max-width: 124px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: #f7faf9;
+  color: var(--muted);
+  padding: 3px 8px;
+  font-size: 0.72rem;
+  font-weight: 850;
+  line-height: 1.2;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
@@ -1419,6 +1466,9 @@ select:focus {
   right: 16px;
   bottom: calc(74px + env(safe-area-inset-bottom));
   z-index: 15;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
   min-height: 46px;
   border: 0;
   border-radius: 999px;
@@ -1428,6 +1478,10 @@ select:focus {
   padding: 0 16px;
   cursor: pointer;
   font-weight: 950;
+}
+
+.fab svg {
+  flex-shrink: 0;
 }
 
 .fab.hidden {
@@ -1452,10 +1506,10 @@ select:focus {
 .nav-item {
   display: grid;
   place-items: center;
-  gap: 2px;
+  gap: 3px;
   min-height: 50px;
   border: 0;
-  border-radius: 13px;
+  border-radius: 12px;
   background: transparent;
   color: var(--muted);
   cursor: pointer;
@@ -1471,9 +1525,20 @@ select:focus {
 }
 
 .nav-icon {
-  display: block;
-  font-size: 1rem;
-  line-height: 1;
+  display: grid;
+  place-items: center;
+  width: 21px;
+  height: 21px;
+}
+
+.nav-icon svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.1;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 .recent-panel {
@@ -1596,7 +1661,7 @@ body.theme-dark .stat-card {
 }
 
 body.theme-dark .balance-card {
-  background: var(--soft);
+  background: linear-gradient(135deg, #18211f 0%, #12332f 100%);
   border-color: rgba(45, 212, 191, 0.18);
 }
 
@@ -1734,26 +1799,26 @@ body.theme-dark .bottom-nav {
 }
 
 body.theme-dark .toast.success {
-  background: rgba(52, 211, 153, 0.14);
+  background: #123329;
   border-color: rgba(52, 211, 153, 0.28);
   color: #6ee7b7;
 }
 
 body.theme-dark .toast.warning {
-  background: rgba(251, 191, 36, 0.12);
+  background: #33280f;
   border-color: rgba(251, 191, 36, 0.26);
   color: #fcd34d;
 }
 
 body.theme-dark .toast.info {
-  background: rgba(56, 189, 248, 0.12);
+  background: #102a3a;
   border-color: rgba(56, 189, 248, 0.26);
   color: #7dd3fc;
 }
 
 body.theme-dark .toast.danger,
 body.theme-dark .toast.error {
-  background: rgba(251, 113, 133, 0.12);
+  background: #361b22;
   border-color: rgba(251, 113, 133, 0.26);
   color: #fda4af;
 }
@@ -1802,6 +1867,12 @@ body.theme-dark .master-item {
 body.theme-dark .transaction-card {
   background: var(--panel);
   border-color: var(--line);
+}
+
+body.theme-dark .payment-badge {
+  background: var(--soft);
+  border-color: var(--line);
+  color: var(--muted);
 }
 
 @media (min-width: 680px) {

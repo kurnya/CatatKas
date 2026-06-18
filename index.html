@@ -197,6 +197,8 @@
 
       <section class="page" id="settingsPage" data-title="Pengaturan">
 
+        <p class="settings-group-title">Akun & preferensi</p>
+
         <!-- 1. Sinkronisasi Data -->
         <section class="settings-card panel sync-card">
           <div class="settings-heading">
@@ -268,6 +270,8 @@
           </div>
         </section>
 
+        <p class="settings-group-title">Data aplikasi</p>
+
         <!-- 3. Data & Backup (with offline status merged) -->
         <section class="settings-card panel">
           <div class="settings-heading">
@@ -320,6 +324,8 @@
           </div>
         </section>
 
+        <p class="settings-group-title">Install & versi</p>
+
         <!-- 5. Download Aplikasi -->
         <section class="settings-card panel download-card" id="downloadAppSection">
           <div class="settings-heading">
@@ -366,6 +372,8 @@
           </div>
         </section>
 
+        <p class="settings-group-title">Lanjutan</p>
+
         <!-- 7. Zona Berbahaya -->
         <section class="settings-card panel danger-zone">
           <div class="settings-heading">
@@ -404,7 +412,12 @@
           <p class="eyebrow">Filter</p>
           <h2>Transaksi</h2>
         </div>
-        <button type="button" class="close-sheet-button" id="closeFilterButton" aria-label="Tutup filter">x</button>
+        <button type="button" class="close-sheet-button" id="closeFilterButton" aria-label="Tutup filter">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M18 6 6 18"/>
+            <path d="m6 6 12 12"/>
+          </svg>
+        </button>
       </div>
 
       <div class="sheet-content">
@@ -427,7 +440,12 @@
 
     <div class="modal-overlay app-modal-overlay" id="appModalOverlay" hidden></div>
     <section class="app-modal" id="appModal" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="appModalTitle" aria-describedby="appModalMessage">
-      <button type="button" class="modal-close-button" id="appModalClose" aria-label="Tutup modal">x</button>
+      <button type="button" class="modal-close-button" id="appModalClose" aria-label="Tutup modal">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M18 6 6 18"/>
+          <path d="m6 6 12 12"/>
+        </svg>
+      </button>
       <div class="modal-status-icon" id="appModalIcon" aria-hidden="true">i</div>
       <div class="modal-copy">
         <p class="eyebrow" id="appModalEyebrow">CatatKas</p>
@@ -441,14 +459,20 @@
       </div>
     </section>
 
-    <button class="fab" id="addTransactionButton">+ Tambah Transaksi</button>
+    <button class="fab" id="addTransactionButton" aria-label="Tambah transaksi">
+      <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M12 5v14"/>
+        <path d="M5 12h14"/>
+      </svg>
+      <span>Tambah</span>
+    </button>
 
     <nav class="bottom-nav" aria-label="Navigasi utama">
-      <button class="nav-item active" data-nav="home"><span class="nav-icon">⌂</span><span>Beranda</span></button>
-      <button class="nav-item" data-nav="transactions"><span class="nav-icon">↕</span><span>Transaksi</span></button>
-      <button class="nav-item" data-nav="stats"><span class="nav-icon">▥</span><span>Statistik</span></button>
-      <button class="nav-item" data-nav="master"><span class="nav-icon">☷</span><span>Master</span></button>
-      <button class="nav-item" data-nav="settings"><span class="nav-icon">⚙</span><span>Pengaturan</span></button>
+      <button class="nav-item active" data-nav="home"><span class="nav-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 10.8 9-7 9 7"/><path d="M5 10v10h14V10"/><path d="M9 20v-6h6v6"/></svg></span><span>Beranda</span></button>
+      <button class="nav-item" data-nav="transactions"><span class="nav-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 7h11"/><path d="m15 4 3 3-3 3"/><path d="M17 17H6"/><path d="m9 14-3 3 3 3"/></svg></span><span>Transaksi</span></button>
+      <button class="nav-item" data-nav="stats"><span class="nav-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19V5"/><path d="M4 19h16"/><path d="M8 16v-5"/><path d="M12 16V8"/><path d="M16 16v-7"/></svg></span><span>Statistik</span></button>
+      <button class="nav-item" data-nav="master"><span class="nav-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 6h13"/><path d="M8 12h13"/><path d="M8 18h13"/><path d="M3 6h.01"/><path d="M3 12h.01"/><path d="M3 18h.01"/></svg></span><span>Master</span></button>
+      <button class="nav-item" data-nav="settings"><span class="nav-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15.5A3.5 3.5 0 1 0 12 8a3.5 3.5 0 0 0 0 7.5Z"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.86l.04.04a2 2 0 1 1-2.83 2.83l-.04-.04a1.7 1.7 0 0 0-1.86-.34 1.7 1.7 0 0 0-1.05 1.57V21a2 2 0 1 1-4 0v-.06a1.7 1.7 0 0 0-1.05-1.57 1.7 1.7 0 0 0-1.86.34l-.04.04a2 2 0 1 1-2.83-2.83l.04-.04A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-1.57-1H3a2 2 0 1 1 0-4h.06A1.7 1.7 0 0 0 4.63 8.95a1.7 1.7 0 0 0-.34-1.86l-.04-.04a2 2 0 0 1 2.83-2.83l.04.04c.48.48 1.2.62 1.83.34A1.7 1.7 0 0 0 10 3.06V3a2 2 0 1 1 4 0v.06c0 .68.41 1.29 1.05 1.57.63.28 1.35.14 1.83-.34l.04-.04a2 2 0 1 1 2.83 2.83l-.04.04c-.48.48-.62 1.2-.34 1.86.27.62.88 1.02 1.56 1.02H21a2 2 0 1 1 0 4h-.06c-.68 0-1.29.4-1.54 1Z"/></svg></span><span>Pengaturan</span></button>
     </nav>
 
     <script src="app.js"></script>

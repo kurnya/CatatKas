@@ -1199,11 +1199,11 @@ function renderTransactionCards(target, transactions, showActions) {
           <span>${formatDate(transaction.date)}</span>
           <span>${escapeHtml(transaction.type || transaction.category)}</span>
           <span>${escapeHtml(transaction.subCategory || "Lainnya")}</span>
-          <span>${escapeHtml(transaction.paymentMethod)}</span>
         </div>
       </div>
       <div class="transaction-side">
         <strong class="transaction-amount ${amountClass(transaction.type)}">${signedAmount(transaction)}</strong>
+        <span class="payment-badge">${escapeHtml(transaction.paymentMethod)}</span>
         <div class="item-actions"></div>
       </div>
     `;
