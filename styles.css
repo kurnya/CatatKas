@@ -2,11 +2,13 @@
   color-scheme: light;
   --bg: #f4f6f5;
   --panel: #ffffff;
+  --surface-elevated: #ffffff;
   --text: #10201c;
   --muted: #66736f;
   --line: #e1e7e4;
   --brand: #0f766e;
   --brand-dark: #0b5f59;
+  --brand-light: #14b8a6;
   --soft: #eef6f4;
   --income: #047857;
   --expense: #dc2626;
@@ -15,6 +17,12 @@
   --transfer: #6d28d9;
   --shadow: 0 10px 22px rgba(16, 32, 28, 0.07);
   --shadow-soft: 0 6px 16px rgba(16, 32, 28, 0.05);
+  --shadow-elevated: 0 18px 40px rgba(16, 32, 28, 0.12);
+  --radius-sm: 10px;
+  --radius-md: 16px;
+  --radius-lg: 22px;
+  --transition-fast: 160ms ease;
+  --transition-normal: 260ms ease;
 }
 
 * {
@@ -56,10 +64,13 @@ p {
 h1 {
   font-size: 1.22rem;
   line-height: 1.1;
+  font-weight: 700;
+  letter-spacing: -0.01em;
 }
 
 h2 {
   font-size: 1rem;
+  font-weight: 650;
 }
 
 .app-header,
@@ -156,16 +167,22 @@ h2 {
 }
 
 .app-shell {
-  padding: 6px 12px 96px;
+  padding: 8px 14px 108px;
 }
 
 .page {
   display: none;
-  gap: 10px;
+  gap: 14px;
 }
 
 .page.active {
   display: grid;
+  animation: pageFadeIn 280ms ease;
+}
+
+@keyframes pageFadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 .panel,
@@ -173,12 +190,19 @@ h2 {
 .stat-card {
   background: var(--panel);
   border: 1px solid var(--line);
-  border-radius: 14px;
+  border-radius: var(--radius-md);
   box-shadow: var(--shadow);
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.panel:active,
+.summary-card:active,
+.stat-card:active {
+  transform: scale(0.985);
 }
 
 .panel {
-  padding: 12px;
+  padding: 16px;
 }
 
 .month-row,
@@ -212,18 +236,31 @@ h2 {
   font-size: 0.86rem;
 }
 
-.summary-grid,
+.summary-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+
+.summary-grid .summary-card:first-child {
+  grid-column: auto;
+}
+
+.summary-card {
+  min-width: 0;
+}
+
 .stats-grid {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 8px;
+  gap: 10px;
 }
 
 .summary-card,
 .stat-card {
   display: grid;
   gap: 4px;
-  padding: 12px;
+  padding: 14px;
 }
 
 .summary-card span,
@@ -238,21 +275,114 @@ h2 {
 .stat-card strong {
   font-size: 1.18rem;
   line-height: 1.15;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums;
 }
 
 .balance-card {
-  gap: 7px;
-  min-height: 92px;
+  gap: 8px;
+  min-height: 110px;
   align-content: center;
-  background: linear-gradient(135deg, #ffffff 0%, #ecfdf5 100%);
-  border-color: rgba(15, 118, 110, 0.24);
-  color: var(--text);
+  background: linear-gradient(135deg, #0f766e 0%, #0d9488 50%, #14b8a6 100%);
+  border: none;
+  color: #fff;
+  position: relative;
+  overflow: hidden;
+  padding: 20px 16px;
+  box-shadow: 0 14px 32px rgba(15, 118, 110, 0.22);
+}
+
+.balance-card::before {
+  content: "";
+  position: absolute;
+  top: -30%;
+  right: -15%;
+  width: 140px;
+  height: 140px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+  pointer-events: none;
+}
+
+.balance-card::after {
+  content: "";
+  position: absolute;
+  bottom: -20%;
+  left: -10%;
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.05);
+  pointer-events: none;
+}
+
+.balance-card span {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.balance-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.balance-eye-btn {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.15);
+  color: rgba(255, 255, 255, 0.85);
+  cursor: pointer;
+  padding: 0;
+  flex-shrink: 0;
+  transition: background 160ms ease;
+}
+
+.balance-eye-btn:hover,
+.balance-eye-btn:active {
+  background: rgba(255, 255, 255, 0.28);
+}
+
+.balance-eye-btn svg {
+  display: block;
 }
 
 .balance-card strong {
-  color: var(--brand-dark);
-  font-size: clamp(1.55rem, 7vw, 2.1rem);
-  letter-spacing: 0;
+  color: #fff;
+  font-size: clamp(1.65rem, 8vw, 2.2rem);
+  letter-spacing: -0.02em;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.balance-card strong::-webkit-scrollbar {
+  display: none;
+}
+
+.balance-sub {
+  display: flex;
+  gap: 14px;
+  margin-top: 4px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  opacity: 0.88;
+}
+
+.balance-sub .income-text {
+  color: #bbf7d0;
+}
+
+.balance-sub .expense-text {
+  color: #fecaca;
 }
 
 .income-text {
@@ -272,7 +402,7 @@ label {
   gap: 6px;
   color: var(--muted);
   font-size: 0.84rem;
-  font-weight: 800;
+  font-weight: 600;
 }
 
 input,
@@ -1288,7 +1418,7 @@ select:focus {
 .transaction-title {
   display: block;
   overflow: hidden;
-  font-weight: 900;
+  font-weight: 700;
   font-size: 0.95rem;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1327,9 +1457,13 @@ select:focus {
 }
 
 .transaction-amount {
-  font-weight: 950;
+  font-weight: 800;
   font-size: 0.95rem;
   white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 140px;
 }
 
 .payment-badge {
@@ -1362,6 +1496,7 @@ select:focus {
 .item-actions {
   display: flex;
   gap: 6px;
+  margin-top: 6px;
 }
 
 .small-button {
@@ -1372,11 +1507,38 @@ select:focus {
 }
 
 .empty-state {
-  padding: 14px;
-  border: 1px dashed var(--line);
-  border-radius: 16px;
+  padding: 20px;
+  border: 1.5px dashed var(--line);
+  border-radius: var(--radius-md);
   color: var(--muted);
   text-align: center;
+  display: grid;
+  gap: 12px;
+  justify-items: center;
+}
+
+.empty-state svg {
+  opacity: 0.35;
+}
+
+.empty-state .empty-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  border: none;
+  border-radius: 999px;
+  background: var(--brand);
+  color: #fff;
+  padding: 8px 16px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}
+
+.empty-state .empty-cta:hover {
+  background: var(--brand-dark);
 }
 
 .bar-chart {
@@ -1398,7 +1560,7 @@ select:focus {
 }
 
 .bar-track {
-  height: 10px;
+  height: 12px;
   overflow: hidden;
   border-radius: 999px;
   background: #eef1ef;
@@ -1407,7 +1569,14 @@ select:focus {
 .bar-fill {
   height: 100%;
   border-radius: inherit;
-  background: var(--brand);
+  background: linear-gradient(90deg, var(--brand) 0%, var(--brand-light) 100%);
+  animation: barGrow 600ms ease forwards;
+  transform-origin: left;
+}
+
+@keyframes barGrow {
+  from { transform: scaleX(0); }
+  to   { transform: scaleX(1); }
 }
 
 .master-section {
@@ -1469,15 +1638,82 @@ select:focus {
   display: inline-flex;
   align-items: center;
   gap: 7px;
-  min-height: 46px;
+  min-height: 50px;
   border: 0;
   border-radius: 999px;
   background: var(--brand);
   color: #fff;
-  box-shadow: 0 12px 24px rgba(15, 118, 110, 0.26);
-  padding: 0 16px;
+  box-shadow: 0 14px 28px rgba(15, 118, 110, 0.3);
+  padding: 0 18px;
   cursor: pointer;
-  font-weight: 950;
+  font-weight: 800;
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast), background var(--transition-fast);
+}
+
+.fab:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 18px 34px rgba(15, 118, 110, 0.36);
+}
+
+.fab:active {
+  transform: translateY(1px);
+}
+
+.fab svg {
+  transition: transform 260ms ease;
+}
+
+.fab-speed-dial {
+  position: fixed;
+  right: 16px;
+  bottom: calc(134px + env(safe-area-inset-bottom));
+  z-index: 14;
+  display: grid;
+  gap: 8px;
+  opacity: 0;
+  transform: translateY(12px) scale(0.9);
+  pointer-events: none;
+  transition: opacity var(--transition-normal), transform var(--transition-normal);
+}
+
+.fab-speed-dial.open {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  pointer-events: auto;
+}
+
+.fab-speed-dial button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  border: none;
+  border-radius: 999px;
+  background: var(--panel);
+  color: var(--text);
+  box-shadow: var(--shadow-elevated);
+  padding: 0 16px;
+  font-size: 0.84rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: transform var(--transition-fast);
+}
+
+.fab-speed-dial button:active {
+  transform: scale(0.96);
+}
+
+.fab-speed-dial .dial-income {
+  border-left: 3px solid var(--income);
+}
+
+.fab-speed-dial .dial-expense {
+  border-left: 3px solid var(--expense);
+}
+
+.fab-speed-dial .dial-transfer {
+  border-left: 3px solid var(--transfer);
 }
 
 .fab svg {
@@ -1514,14 +1750,20 @@ select:focus {
   color: var(--muted);
   cursor: pointer;
   font-size: 0.76rem;
-  font-weight: 900;
+  font-weight: 700;
   line-height: 1;
+  transition: color var(--transition-fast), background var(--transition-fast), transform var(--transition-fast);
 }
 
 .nav-item.active {
   background: var(--soft);
   color: var(--brand-dark);
-  box-shadow: inset 0 0 0 1px #cfe4df;
+  box-shadow: inset 0 0 0 1.5px var(--brand);
+  transform: translateY(-2px);
+}
+
+.nav-item.active .nav-icon svg {
+  stroke-width: 2.6;
 }
 
 .nav-icon {
@@ -1661,8 +1903,9 @@ body.theme-dark .stat-card {
 }
 
 body.theme-dark .balance-card {
-  background: linear-gradient(135deg, #18211f 0%, #12332f 100%);
-  border-color: rgba(45, 212, 191, 0.18);
+  background: linear-gradient(135deg, #0b4f48 0%, #0f766e 50%, #119685 100%);
+  border: none;
+  box-shadow: 0 14px 32px rgba(15, 118, 110, 0.28);
 }
 
 body.theme-dark input,
@@ -1778,7 +2021,7 @@ body.theme-dark .bar-track {
 }
 
 body.theme-dark .bar-fill {
-  background: var(--brand);
+  background: linear-gradient(90deg, var(--brand) 0%, var(--brand-light) 100%);
 }
 
 body.theme-dark .sheet-overlay,
@@ -1876,13 +2119,8 @@ body.theme-dark .payment-badge {
 }
 
 @media (min-width: 680px) {
-  .summary-grid,
   .stats-grid {
     grid-template-columns: repeat(2, 1fr);
-  }
-
-  .summary-grid {
-    grid-template-columns: repeat(3, 1fr);
   }
 
   .stat-card.wide {
@@ -2025,4 +2263,123 @@ body.theme-dark .legal-footer {
 body.theme-dark .legal-nav-link,
 body.theme-dark .legal-footer-link {
   color: var(--brand, #14b8a6);
+}
+
+body.theme-dark .swipe-card-inner {
+  background: var(--panel);
+}
+
+body.theme-dark .fab-speed-dial button {
+  background: var(--panel);
+  color: var(--text);
+}
+
+body.theme-dark .fab-overlay {
+  background: rgba(0, 0, 0, 0.4);
+}
+
+body.theme-dark .empty-state .empty-cta {
+  background: #0f766e;
+}
+
+/* ── Settings Accordion ────────────────── */
+.accordion-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.accordion-header .accordion-chevron {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  color: var(--muted);
+  transition: transform var(--transition-normal);
+}
+
+.accordion-header[aria-expanded="true"] .accordion-chevron {
+  transform: rotate(180deg);
+}
+
+.accordion-body {
+  display: grid;
+  gap: 12px;
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 320ms ease, opacity 240ms ease;
+  opacity: 0;
+}
+
+.accordion-body.open {
+  max-height: 1200px;
+  opacity: 1;
+}
+
+/* ── Swipe Transaction Card ────────────── */
+.swipe-card-wrapper {
+  position: relative;
+  overflow: hidden;
+  border-radius: 12px;
+  box-shadow: var(--shadow-soft);
+}
+
+.swipe-card-actions {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: stretch;
+  z-index: 1;
+}
+
+.swipe-card-actions button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 72px;
+  border: none;
+  color: #fff;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.swipe-action-edit {
+  background: var(--brand);
+}
+
+.swipe-action-delete {
+  background: var(--expense);
+}
+
+.swipe-card-inner {
+  position: relative;
+  z-index: 2;
+  background: var(--panel);
+  transition: transform 240ms ease;
+}
+
+/* ── Speed Dial Overlay ─────────────────── */
+.fab-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 13;
+  background: rgba(0, 0, 0, 0.2);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--transition-normal);
+}
+
+.fab-overlay.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* ── Number Animation ───────────────────── */
+.animate-count {
+  transition: opacity 120ms ease;
 }

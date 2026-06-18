@@ -56,6 +56,8 @@ let activeFilters = {
 };
 let draftFilters = { ...activeFilters };
 let activeDownloadPlatform = "android";
+let showFullBalance = false;
+let lastCumulativeBalance = 0;
 
 const elements = {
   pageTitle: document.querySelector("#pageTitle"),
@@ -87,6 +89,12 @@ const elements = {
   incomeTotal: document.querySelector("#incomeTotal"),
   expenseTotal: document.querySelector("#expenseTotal"),
   balanceTotal: document.querySelector("#balanceTotal"),
+  balanceIncomeMini: document.querySelector("#balanceIncomeMini"),
+  balanceExpenseMini: document.querySelector("#balanceExpenseMini"),
+  balanceEyeToggle: document.querySelector("#balanceEyeToggle"),
+  balanceEyeIcon: document.querySelector("#balanceEyeIcon"),
+  fabSpeedDial: document.querySelector("#fabSpeedDial"),
+  fabOverlay: document.querySelector("#fabOverlay"),
   recentList: document.querySelector("#recentList"),
   transactionList: document.querySelector("#transactionList"),
   filterSummary: document.querySelector("#filterSummary"),
@@ -365,6 +373,15 @@ function bindEvents() {
   elements.appModalOverlay.addEventListener("click", () => closeModal(false));
   elements.appModalClose.addEventListener("click", () => closeModal(false));
   elements.appModalCancel.addEventListener("click", () => closeModal(false));
+
+  // Balance eye toggle: show/hide full amount
+  if (elements.balanceEyeToggle) {
+    elements.balanceEyeToggle.addEventListener("click", () => {
+      showFullBalance = !showFullBalance;
+      updateBalanceDisplay();
+      updateEyeIcon();
+    });
+  }
 
   elements.installButton.hidden = false;
 
@@ -660,6 +677,13 @@ function navigate(page) {
   const activePage = document.querySelector(`#${pageId}`);
   elements.pageTitle.textContent = activePage.dataset.title;
   elements.addTransactionButton.classList.toggle("hidden", page !== "home");
+  // Close speed dial if open
+  if (elements.fabSpeedDial && elements.fabSpeedDial.classList.contains("open")) {
+    elements.fabSpeedDial.classList.remove("open");
+    elements.fabOverlay.classList.remove("open");
+    const svg = elements.addTransactionButton.querySelector("svg");
+    if (svg) svg.style.transform = "";
+  }
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
@@ -762,9 +786,21 @@ function renderHome() {
   const cumulative = getTotals(allUpToMonth);
   const cumulativeBalance = cumulative.income - cumulative.expense;
 
-  elements.incomeTotal.textContent = rupiah(totals.income);
-  elements.expenseTotal.textContent = rupiah(totals.expense);
-  elements.balanceTotal.textContent = rupiah(cumulativeBalance);
+  animateValue(elements.incomeTotal, totals.income, rupiahCompact);
+  animateValue(elements.expenseTotal, totals.expense, rupiahCompact);
+
+  // Store for eye toggle
+  lastCumulativeBalance = cumulativeBalance;
+  updateBalanceDisplay();
+
+  // Hero mini income/expense
+  if (elements.balanceIncomeMini) {
+    elements.balanceIncomeMini.textContent = `+ ${rupiahCompact(totals.income)}`;
+  }
+  if (elements.balanceExpenseMini) {
+    elements.balanceExpenseMini.textContent = `- ${rupiahCompact(totals.expense)}`;
+  }
+
   renderTransactionCards(elements.recentList, getSortedTransactions(monthTransactions).slice(0, 5), false);
 }
 
@@ -1183,38 +1219,69 @@ function ensureActiveFiltersStillExist() {
 function renderTransactionCards(target, transactions, showActions) {
   target.innerHTML = "";
   if (!transactions.length) {
-    target.innerHTML = '<p class="empty-state">Belum ada transaksi.</p>';
+    const emptyDiv = document.createElement("div");
+    emptyDiv.className = "empty-state";
+    emptyDiv.innerHTML = `
+      <svg viewBox="0 0 64 64" width="56" height="56" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="10" y="6" width="44" height="52" rx="6" />
+        <path d="M22 22h20" /><path d="M22 32h20" /><path d="M22 42h12" />
+        <circle cx="48" cy="48" r="14" fill="var(--panel)" stroke="currentColor" />
+        <path d="M48 42v12" /><path d="M42 48h12" />
+      </svg>
+      <span>Belum ada transaksi. Mulai catat keuangan Anda!</span>
+    `;
+    target.appendChild(emptyDiv);
     return;
   }
 
   transactions.forEach((transaction) => {
-    const card = document.createElement("article");
-    card.className = "transaction-card";
-
     const title = transaction.note || transaction.subCategory || transaction.category;
-    card.innerHTML = `
-      <div class="transaction-main">
-        <strong class="transaction-title">${escapeHtml(title)}</strong>
-        <div class="transaction-meta">
-          <span>${formatDate(transaction.date)}</span>
-          <span>${escapeHtml(transaction.type || transaction.category)}</span>
-          <span>${escapeHtml(transaction.subCategory || "Lainnya")}</span>
-        </div>
-      </div>
-      <div class="transaction-side">
-        <strong class="transaction-amount ${amountClass(transaction.type)}">${signedAmount(transaction)}</strong>
-        <span class="payment-badge">${escapeHtml(transaction.paymentMethod)}</span>
-        <div class="item-actions"></div>
-      </div>
-    `;
 
     if (showActions) {
+      const card = document.createElement("article");
+      card.className = "transaction-card";
+      const fullAmount = rupiah(transaction.amount);
+      card.innerHTML = `
+        <div class="transaction-main">
+          <strong class="transaction-title">${escapeHtml(title)}</strong>
+          <div class="transaction-meta">
+            <span>${formatDate(transaction.date)}</span>
+            <span>${escapeHtml(transaction.type || transaction.category)}</span>
+            <span>${escapeHtml(transaction.subCategory || "Lainnya")}</span>
+          </div>
+          <div class="item-actions">
+          </div>
+        </div>
+        <div class="transaction-side">
+          <strong class="transaction-amount ${amountClass(transaction.type)}" title="${escapeHtml(fullAmount)}">${signedAmount(transaction, true)}</strong>
+          <span class="payment-badge">${escapeHtml(transaction.paymentMethod)}</span>
+        </div>
+      `;
       const actions = card.querySelector(".item-actions");
       actions.appendChild(actionButton("Edit", () => editTransaction(transaction.id)));
       actions.appendChild(actionButton("Hapus", () => deleteTransaction(transaction.id)));
+      target.appendChild(card);
+    } else {
+      // Simple card without swipe (recent list)
+      const card = document.createElement("article");
+      card.className = "transaction-card";
+      const fullAmount = rupiah(transaction.amount);
+      card.innerHTML = `
+        <div class="transaction-main">
+          <strong class="transaction-title">${escapeHtml(title)}</strong>
+          <div class="transaction-meta">
+            <span>${formatDate(transaction.date)}</span>
+            <span>${escapeHtml(transaction.type || transaction.category)}</span>
+            <span>${escapeHtml(transaction.subCategory || "Lainnya")}</span>
+          </div>
+        </div>
+        <div class="transaction-side">
+          <strong class="transaction-amount ${amountClass(transaction.type)}" title="${escapeHtml(fullAmount)}">${signedAmount(transaction, true)}</strong>
+          <span class="payment-badge">${escapeHtml(transaction.paymentMethod)}</span>
+        </div>
+      `;
+      target.appendChild(card);
     }
-
-    target.appendChild(card);
   });
 }
 
@@ -1232,10 +1299,10 @@ function renderStats() {
     .filter((item) => item.type === "Pengeluaran" && item.date >= thirtyDaysAgo && item.date <= todayStr)
     .reduce((sum, item) => sum + Number(item.amount || 0), 0);
 
-  elements.statsExpense.textContent = rupiah(totals.expense);
-  elements.statsBalance.textContent = rupiah(totals.income - totals.expense);
-  elements.topExpenseCategory.textContent = top ? `${top[0]} - ${rupiah(top[1])}` : "-";
-  elements.dailyAverage.textContent = rupiah(Math.round(last30DaysExpense / 30));
+  elements.statsExpense.textContent = rupiahCompact(totals.expense);
+  elements.statsBalance.textContent = rupiahCompact(totals.income - totals.expense);
+  elements.topExpenseCategory.textContent = top ? `${top[0]} - ${rupiahCompact(top[1])}` : "-";
+  elements.dailyAverage.textContent = rupiahCompact(Math.round(last30DaysExpense / 30));
   renderChart(categoryTotals);
 }
 
@@ -1243,7 +1310,17 @@ function renderChart(categoryTotals) {
   const entries = Object.entries(categoryTotals).sort((a, b) => b[1] - a[1]).slice(0, 6);
   elements.expenseChart.innerHTML = "";
   if (!entries.length) {
-    elements.expenseChart.innerHTML = '<p class="empty-state">Belum ada pengeluaran bulan ini.</p>';
+    elements.expenseChart.innerHTML = `
+      <div class="empty-state">
+        <svg viewBox="0 0 64 64" width="56" height="56" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="8" y="36" width="10" height="22" rx="2" />
+          <rect x="22" y="24" width="10" height="34" rx="2" />
+          <rect x="36" y="14" width="10" height="44" rx="2" />
+          <rect x="50" y="6" width="10" height="52" rx="2" />
+        </svg>
+        <span>Belum ada data pengeluaran bulan ini.</span>
+      </div>
+    `;
     return;
   }
 
@@ -1254,7 +1331,7 @@ function renderChart(categoryTotals) {
     row.innerHTML = `
       <div class="bar-info">
         <strong>${escapeHtml(name)}</strong>
-        <span>${rupiah(total)}</span>
+        <span>${rupiahCompact(total)}</span>
       </div>
       <div class="bar-track"><div class="bar-fill" style="width: ${(total / max) * 100}%"></div></div>
     `;
@@ -2354,10 +2431,11 @@ function downloadFile(filename, content, type) {
   URL.revokeObjectURL(url);
 }
 
-function signedAmount(transaction) {
-  if (transaction.type === "Pemasukan") return `+${rupiah(transaction.amount)}`;
-  if (transaction.type === "Pengeluaran") return `-${rupiah(transaction.amount)}`;
-  return rupiah(transaction.amount);
+function signedAmount(transaction, compact) {
+  const fmt = compact ? rupiahCompact : rupiah;
+  if (transaction.type === "Pemasukan") return `+${fmt(transaction.amount)}`;
+  if (transaction.type === "Pengeluaran") return `-${fmt(transaction.amount)}`;
+  return fmt(transaction.amount);
 }
 
 function amountClass(type) {
@@ -2415,6 +2493,12 @@ function rupiah(value) {
   }).format(value || 0);
 }
 
+function rupiahCompact(value) {
+  const abs = Math.abs(value || 0);
+  if (abs >= 1e12) return `Rp${(value / 1e12).toFixed(1).replace(/\.0$/, "")} T`;
+  return rupiah(value);
+}
+
 function formatDate(value) {
   const d = new Date(`${value}T00:00:00`);
   const dd = String(d.getDate()).padStart(2, "0");
@@ -2441,5 +2525,106 @@ function escapeHtml(value) {
     .replaceAll('"', "&quot;");
 }
 
+// ── Balance Eye Toggle ─────────────────────
+const EYE_OPEN_SVG = `<path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/>`;
+const EYE_CLOSED_SVG = `<path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><line x1="2" x2="22" y1="2" y2="22"/>`;
 
+function updateBalanceDisplay() {
+  if (!elements.balanceTotal) return;
+  const fmt = showFullBalance ? rupiah : rupiahCompact;
+  const formatted = fmt(lastCumulativeBalance);
+  elements.balanceTotal.textContent = formatted;
+  elements.balanceTotal.title = showFullBalance ? "" : rupiah(lastCumulativeBalance);
+  // Show eye toggle only when balance reaches 1T (compact format applies)
+  if (elements.balanceEyeToggle) {
+    const isCompact = Math.abs(lastCumulativeBalance) >= 1e12;
+    elements.balanceEyeToggle.hidden = !isCompact;
+    if (!isCompact) showFullBalance = false;
+  }
+}
+
+function updateEyeIcon() {
+  if (!elements.balanceEyeIcon) return;
+  elements.balanceEyeIcon.innerHTML = showFullBalance ? EYE_CLOSED_SVG : EYE_OPEN_SVG;
+  elements.balanceEyeToggle.title = showFullBalance ? "Sembunyikan rincian" : "Tampilkan rincian saldo";
+}
+
+// ── Number Counter Animation ──────────────
+function animateValue(element, targetValue, formatter) {
+  const fmt = formatter || rupiah;
+  const formatted = fmt(targetValue);
+  if (element.textContent === formatted) return;
+  element.title = rupiah(targetValue);
+  element.style.opacity = "0.4";
+  setTimeout(() => {
+    element.textContent = formatted;
+    element.style.opacity = "1";
+  }, 100);
+}
+
+// ── FAB Speed Dial ──────────────────────────
+(function initFabSpeedDial() {
+  const fab = elements.addTransactionButton;
+  const dial = elements.fabSpeedDial;
+  const overlay = elements.fabOverlay;
+  let longPressTimer = null;
+  let isDialOpen = false;
+
+  function openDial() {
+    isDialOpen = true;
+    dial.classList.add("open");
+    overlay.classList.add("open");
+    fab.querySelector("svg").style.transform = "rotate(45deg)";
+  }
+
+  function closeDial() {
+    isDialOpen = false;
+    dial.classList.remove("open");
+    overlay.classList.remove("open");
+    fab.querySelector("svg").style.transform = "";
+  }
+
+  // Long press to open speed dial
+  fab.addEventListener("touchstart", (e) => {
+    longPressTimer = setTimeout(() => {
+      e.preventDefault();
+      openDial();
+    }, 400);
+  }, { passive: false });
+
+  fab.addEventListener("touchend", () => clearTimeout(longPressTimer));
+  fab.addEventListener("touchmove", () => clearTimeout(longPressTimer));
+
+  // Desktop: right-click or long press via mousedown
+  fab.addEventListener("mousedown", () => {
+    longPressTimer = setTimeout(openDial, 500);
+  });
+  fab.addEventListener("mouseup", () => clearTimeout(longPressTimer));
+  fab.addEventListener("mouseleave", () => clearTimeout(longPressTimer));
+
+  // Close dial on overlay click
+  overlay.addEventListener("click", closeDial);
+
+  // Dial button actions
+  dial.querySelectorAll("[data-dial-type]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const type = btn.dataset.dialType;
+      closeDial();
+      resetForm();
+      elements.type.value = type;
+      syncMainCategory(type);
+      navigate("add");
+    });
+  });
+
+  // Close dial when navigating
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && isDialOpen) closeDial();
+  });
+})();
+
+// ── Settings Accordion (disabled - all cards always visible) ──
+(function initSettingsAccordion() {
+  // Accordion removed per user request - all settings cards stay fully visible
+})();
 
