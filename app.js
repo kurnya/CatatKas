@@ -194,6 +194,13 @@ function init() {
   window.addEventListener("online", renderOfflineStatus);
   window.addEventListener("offline", renderOfflineStatus);
   window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", applyThemePreference);
+
+  // Auto-check for updates when app becomes visible (user returns to tab)
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden && typeof checkForAppUpdate === "function") {
+      checkForAppUpdate(false);
+    }
+  });
 }
 
 function bindEvents() {
@@ -1934,9 +1941,11 @@ async function handleUpdateReady(worker, manual = false) {
 
   if (manual) {
     showToast("Update ditemukan. CatatKas sedang diperbarui...", "info");
+    applyAppUpdate();
   } else if (!IS_DEV && !updateModalShownThisSession && shouldShowUpdatePrompt(updateVersion)) {
     updateModalShownThisSession = true;
-    showUpdateAvailableToast(updateVersion);
+    showToast(`Update v${updateVersion} ditemukan. Memperbarui...`, "info");
+    applyAppUpdate();
   }
   return true;
 }
