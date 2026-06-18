@@ -856,7 +856,7 @@ async function _applySheetFormatting() {
     transfer: { bg: { red: 0.94, green: 0.91, blue: 0.98 }, fg: { red: 0.37, green: 0.24, blue: 0.57 } }
   };
   const columnWidths = {
-    Transaksi: [230, 105, 135, 125, 165, 100, 170, 230, 190],
+    Transaksi: [305, 105, 135, 125, 165, 100, 170, 230, 190],
     Subkategori: [145, 170],
     "Metode Pembayaran": [175],
     Metadata: [160, 260]
@@ -965,22 +965,13 @@ async function _applySheetFormatting() {
       if (cfg.name === "Transaksi") {
         requests.push({
           repeatCell: {
-            range: { sheetId, startRowIndex: 1, endRowIndex: totalRows, startColumnIndex: 2, endColumnIndex: 3 },
+            range: { sheetId, startRowIndex: 1, endRowIndex: totalRows, startColumnIndex: 0, endColumnIndex: 1 },
             cell: {
-              dataValidation: {
-                condition: {
-                  type: "ONE_OF_LIST",
-                  values: [
-                    { userEnteredValue: "Pemasukan" },
-                    { userEnteredValue: "Pengeluaran" },
-                    { userEnteredValue: "Pemindahan Saldo" }
-                  ]
-                },
-                strict: true,
-                showCustomUi: true
+              userEnteredFormat: {
+                wrapStrategy: "CLIP"
               }
             },
-            fields: "dataValidation"
+            fields: "userEnteredFormat.wrapStrategy"
           }
         });
 
@@ -997,6 +988,7 @@ async function _applySheetFormatting() {
                 booleanRule: {
                   condition: { type: "TEXT_EQ", values: [{ userEnteredValue: value }] },
                   format: {
+                    backgroundColor: color.bg,
                     textFormat: { foregroundColor: color.fg, bold: true }
                   }
                 }
