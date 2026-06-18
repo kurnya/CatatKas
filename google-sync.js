@@ -813,7 +813,7 @@ async function _applySheetFormatting() {
     transfer: { bg: { red: 0.94, green: 0.91, blue: 0.98 }, fg: { red: 0.37, green: 0.24, blue: 0.57 } }
   };
   const columnWidths = {
-    Transaksi: [230, 105, 115, 125, 155, 100, 170, 230, 190],
+    Transaksi: [230, 105, 135, 125, 165, 100, 170, 230, 190],
     Subkategori: [145, 170],
     "Metode Pembayaran": [175],
     Metadata: [160, 260]
@@ -929,7 +929,7 @@ async function _applySheetFormatting() {
           requests.push({
             addConditionalFormatRule: {
               rule: {
-                ranges: [{ sheetId, startRowIndex: 1, endRowIndex: totalRows, startColumnIndex: 3, endColumnIndex: 4 }],
+                ranges: [{ sheetId, startRowIndex: 1, endRowIndex: totalRows, startColumnIndex: 2, endColumnIndex: 3 }],
                 booleanRule: {
                   condition: { type: "TEXT_EQ", values: [{ userEnteredValue: value }] },
                   format: {
@@ -961,6 +961,16 @@ async function _applySheetFormatting() {
         }
       });
     });
+
+    if (cfg.name === "Transaksi") {
+      requests.push({
+        updateDimensionProperties: {
+          range: { sheetId, dimension: "COLUMNS", startIndex: 3, endIndex: 4 },
+          properties: { hiddenByUser: true },
+          fields: "hiddenByUser"
+        }
+      });
+    }
 
     requests.push({
       autoResizeDimensions: {
