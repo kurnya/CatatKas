@@ -963,6 +963,27 @@ async function _applySheetFormatting() {
       });
 
       if (cfg.name === "Transaksi") {
+        requests.push({
+          repeatCell: {
+            range: { sheetId, startRowIndex: 1, endRowIndex: totalRows, startColumnIndex: 2, endColumnIndex: 3 },
+            cell: {
+              dataValidation: {
+                condition: {
+                  type: "ONE_OF_LIST",
+                  values: [
+                    { userEnteredValue: "Pemasukan" },
+                    { userEnteredValue: "Pengeluaran" },
+                    { userEnteredValue: "Pemindahan Saldo" }
+                  ]
+                },
+                strict: true,
+                showCustomUi: true
+              }
+            },
+            fields: "dataValidation"
+          }
+        });
+
         [
           { value: "Pengeluaran", color: categoryColors.expense },
           { value: "Pemasukan", color: categoryColors.income },
@@ -976,7 +997,6 @@ async function _applySheetFormatting() {
                 booleanRule: {
                   condition: { type: "TEXT_EQ", values: [{ userEnteredValue: value }] },
                   format: {
-                    backgroundColor: color.bg,
                     textFormat: { foregroundColor: color.fg, bold: true }
                   }
                 }
