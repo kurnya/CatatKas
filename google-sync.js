@@ -921,16 +921,17 @@ async function _applySheetFormatting() {
 
       if (cfg.name === "Transaksi") {
         [
-          { formula: '=$D2="Pengeluaran"', color: categoryColors.expense },
-          { formula: '=$D2="Pemasukan"', color: categoryColors.income },
-          { formula: '=OR($D2="Pemindahan Saldo",$D2="Pindah Saldo")', color: categoryColors.transfer }
-        ].forEach(({ formula, color }) => {
+          { value: "Pengeluaran", color: categoryColors.expense },
+          { value: "Pemasukan", color: categoryColors.income },
+          { value: "Pemindahan Saldo", color: categoryColors.transfer },
+          { value: "Pindah Saldo", color: categoryColors.transfer }
+        ].forEach(({ value, color }) => {
           requests.push({
             addConditionalFormatRule: {
               rule: {
                 ranges: [{ sheetId, startRowIndex: 1, endRowIndex: totalRows, startColumnIndex: 3, endColumnIndex: 4 }],
                 booleanRule: {
-                  condition: { type: "CUSTOM_FORMULA", values: [{ userEnteredValue: formula }] },
+                  condition: { type: "TEXT_EQ", values: [{ userEnteredValue: value }] },
                   format: {
                     backgroundColor: color.bg,
                     textFormat: { foregroundColor: color.fg, bold: true }
