@@ -198,6 +198,11 @@ function init() {
   registerServiceWorker();
   initGoogleSheetsSync();
 
+  // Auto-check for updates on app open (silent, no toast if up to date)
+  window.setTimeout(() => {
+    if (typeof checkForAppUpdate === "function") checkForAppUpdate(false);
+  }, 2000);
+
   // Listen for online/offline changes
   window.addEventListener("online", renderOfflineStatus);
   window.addEventListener("offline", renderOfflineStatus);
