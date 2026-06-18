@@ -801,10 +801,23 @@ async function _applySheetFormatting() {
 
   // 3. Build all formatting requests
   const requests = [];
-  const headerBgColor = { red: 0.18, green: 0.47, blue: 0.78 }; // Professional blue
-  const headerFgColor = { red: 1, green: 1, blue: 1 }; // White text
-  const borderStyle = { style: "SOLID", width: 1, color: { red: 0.65, green: 0.65, blue: 0.65 } };
-  const thickBorder = { style: "SOLID", width: 2, color: { red: 0.18, green: 0.47, blue: 0.78 } };
+  const headerBgColor = { red: 0.24, green: 0.38, blue: 0.36 }; // soft deep teal
+  const headerFgColor = { red: 0.98, green: 0.99, blue: 0.98 };
+  const borderColor = { red: 0.80, green: 0.84, blue: 0.82 };
+  const borderStyle = { style: "SOLID", width: 1, color: borderColor };
+  const thickBorder = { style: "SOLID", width: 2, color: { red: 0.46, green: 0.58, blue: 0.55 } };
+  const zebraBgColor = { red: 0.96, green: 0.98, blue: 0.97 };
+  const categoryColors = {
+    expense: { bg: { red: 0.99, green: 0.90, blue: 0.90 }, fg: { red: 0.55, green: 0.16, blue: 0.16 } },
+    income: { bg: { red: 0.90, green: 0.97, blue: 0.92 }, fg: { red: 0.16, green: 0.42, blue: 0.24 } },
+    transfer: { bg: { red: 0.94, green: 0.91, blue: 0.98 }, fg: { red: 0.37, green: 0.24, blue: 0.57 } }
+  };
+  const columnWidths = {
+    Transaksi: [230, 105, 115, 125, 155, 100, 170, 230, 190],
+    Subkategori: [145, 170],
+    "Metode Pembayaran": [175],
+    Metadata: [160, 260]
+  };
 
   const sheetConfigs = [
     { name: "Transaksi", cols: 9 },
@@ -851,14 +864,15 @@ async function _applySheetFormatting() {
             backgroundColor: headerBgColor,
             horizontalAlignment: "CENTER",
             verticalAlignment: "MIDDLE",
+            wrapStrategy: "WRAP",
             borders: {
               top: thickBorder, bottom: thickBorder,
-              left: { style: "SOLID", width: 1, color: { red: 0.65, green: 0.65, blue: 0.65 } },
-              right: { style: "SOLID", width: 1, color: { red: 0.65, green: 0.65, blue: 0.65 } }
+              left: borderStyle,
+              right: borderStyle
             }
           }
         },
-        fields: "userEnteredFormat(backgroundColor,textFormat,horizontalAlignment,verticalAlignment,borders)"
+        fields: "userEnteredFormat(backgroundColor,textFormat,horizontalAlignment,verticalAlignment,wrapStrategy,borders)"
       }
     });
 
@@ -880,13 +894,14 @@ async function _applySheetFormatting() {
             userEnteredFormat: {
               textFormat: { fontSize: 10 },
               verticalAlignment: "MIDDLE",
+              wrapStrategy: "WRAP",
               borders: {
                 top: borderStyle, bottom: borderStyle,
                 left: borderStyle, right: borderStyle
               }
             }
           },
-          fields: "userEnteredFormat(textFormat,verticalAlignment,borders)"
+          fields: "userEnteredFormat(textFormat,verticalAlignment,wrapStrategy,borders)"
         }
       });
 
@@ -897,18 +912,58 @@ async function _applySheetFormatting() {
             ranges: [{ sheetId, startRowIndex: 1, endRowIndex: totalRows, startColumnIndex: 0, endColumnIndex: cfg.cols }],
             booleanRule: {
               condition: { type: "CUSTOM_FORMULA", values: [{ userEnteredValue: "=ISODD(ROW())" }] },
-              format: { backgroundColor: { red: 0.93, green: 0.95, blue: 0.98 } }
+              format: { backgroundColor: zebraBgColor }
             }
           },
           index: 0
         }
       });
+
+      if (cfg.name === "Transaksi") {
+        [
+          { formula: '=$D2="Pengeluaran"', color: categoryColors.expense },
+          { formula: '=$D2="Pemasukan"', color: categoryColors.income },
+          { formula: '=OR($D2="Pemindahan Saldo",$D2="Pindah Saldo")', color: categoryColors.transfer }
+        ].forEach(({ formula, color }) => {
+          requests.push({
+            addConditionalFormatRule: {
+              rule: {
+                ranges: [{ sheetId, startRowIndex: 1, endRowIndex: totalRows, startColumnIndex: 3, endColumnIndex: 4 }],
+                booleanRule: {
+                  condition: { type: "CUSTOM_FORMULA", values: [{ userEnteredValue: formula }] },
+                  format: {
+                    backgroundColor: color.bg,
+                    textFormat: { foregroundColor: color.fg, bold: true }
+                  }
+                }
+              },
+              index: 0
+            }
+          });
+        });
+      }
     }
 
-    // ── Auto-resize all columns to fit content ──
+    // ── Auto-resize first, then set comfortable soft limits for long text columns ──
     requests.push({
       autoResizeDimensions: {
         dimensions: { sheetId, dimension: "COLUMNS", startIndex: 0, endIndex: cfg.cols }
+      }
+    });
+
+    (columnWidths[cfg.name] || []).forEach((pixelSize, colIndex) => {
+      requests.push({
+        updateDimensionProperties: {
+          range: { sheetId, dimension: "COLUMNS", startIndex: colIndex, endIndex: colIndex + 1 },
+          properties: { pixelSize },
+          fields: "pixelSize"
+        }
+      });
+    });
+
+    requests.push({
+      autoResizeDimensions: {
+        dimensions: { sheetId, dimension: "ROWS", startIndex: 0, endIndex: totalRows }
       }
     });
   }
