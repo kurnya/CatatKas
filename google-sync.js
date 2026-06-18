@@ -896,7 +896,7 @@ async function _applySheetFormatting() {
           rule: {
             ranges: [{ sheetId, startRowIndex: 1, endRowIndex: totalRows, startColumnIndex: 0, endColumnIndex: cfg.cols }],
             booleanRule: {
-              condition: { type: "FORMULA", values: [{ userEnteredValue: "=ISODD(ROW())" }] },
+              condition: { type: "CUSTOM_FORMULA", values: [{ userEnteredValue: "=ISODD(ROW())" }] },
               format: { backgroundColor: { red: 0.93, green: 0.95, blue: 0.98 } }
             }
           },
