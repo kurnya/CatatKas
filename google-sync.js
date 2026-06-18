@@ -1014,19 +1014,35 @@ async function _writeSubCategories(subCategories) {
     }
   }
 
-  await _sheetsRequest(`/${_spreadsheetId}/values/Subkategori!A2:B?valueInputOption=RAW`, {
-    method: "PUT",
-    body: JSON.stringify({ values: rows.length ? rows : [[]] })
+  // Clear range first to remove stale rows
+  await _sheetsRequest(`/${_spreadsheetId}/values:batchClear`, {
+    method: "POST",
+    body: JSON.stringify({ ranges: ["Subkategori!A2:B"] })
   });
+
+  if (rows.length > 0) {
+    await _sheetsRequest(`/${_spreadsheetId}/values/Subkategori!A2:B?valueInputOption=RAW`, {
+      method: "PUT",
+      body: JSON.stringify({ values: rows })
+    });
+  }
 }
 
 async function _writePaymentMethods(methods) {
   const rows = methods.map(m => [m]);
 
-  await _sheetsRequest(`/${_spreadsheetId}/values/Metode%20Pembayaran!A2:A?valueInputOption=RAW`, {
-    method: "PUT",
-    body: JSON.stringify({ values: rows.length ? rows : [[]] })
+  // Clear range first to remove stale rows
+  await _sheetsRequest(`/${_spreadsheetId}/values:batchClear`, {
+    method: "POST",
+    body: JSON.stringify({ ranges: ["Metode Pembayaran!A2:A"] })
   });
+
+  if (rows.length > 0) {
+    await _sheetsRequest(`/${_spreadsheetId}/values/Metode%20Pembayaran!A2:A?valueInputOption=RAW`, {
+      method: "PUT",
+      body: JSON.stringify({ values: rows })
+    });
+  }
 }
 
 async function _writeMetadata(appState) {
