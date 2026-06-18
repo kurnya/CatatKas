@@ -29,6 +29,8 @@ let _lastPushTime = null;
 let _lastSyncedTransactionIds = new Set(); // Track which transactions were last synced
 let _discoveryPromise = null; // Lock to prevent concurrent discovery calls
 let _lastKnownSheetModified = null; // Last known spreadsheet modifiedTime from Google server
+let _lastSyncedSubCategoriesSignature = null;
+let _lastSyncedPaymentMethodsSignature = null;
 
 // ── CALLBACKS (set by app.js) ─────────────────
 let _onSyncStateChange = null;   // (isSyncing: bool) => void
@@ -52,6 +54,8 @@ function initGoogleSync(callbacks) {
     _lastPushTime = meta.lastPushTime || meta.lastSyncTime || null;
     _autoSyncEnabled = meta.autoSyncEnabled !== undefined ? meta.autoSyncEnabled : (meta.autoSyncInterval && meta.autoSyncInterval !== "off");
     _lastKnownSheetModified = meta.lastKnownSheetModified || null;
+    _lastSyncedSubCategoriesSignature = meta.lastSyncedSubCategoriesSignature || null;
+    _lastSyncedPaymentMethodsSignature = meta.lastSyncedPaymentMethodsSignature || null;
     
     // Restore synced transaction IDs for differential sync
     if (meta.lastSyncedTransactionIds && Array.isArray(meta.lastSyncedTransactionIds)) {
@@ -174,6 +178,8 @@ async function syncBeforeAction() {
     const transactions = await _readTransactions();
     const subCategories = await _readSubCategories();
     const paymentMethods = await _readPaymentMethods();
+    _lastSyncedSubCategoriesSignature = _getSubCategoriesSignature(subCategories);
+    _lastSyncedPaymentMethodsSignature = _getPaymentMethodsSignature(paymentMethods);
 
     if (_onDataMerge && typeof _onDataMerge === "function") {
       // Sheet data + unsynced local transactions (preserves offline-created data)
@@ -233,6 +239,8 @@ function signOut() {
   _lastPushTime = null;
   _autoSyncEnabled = false;
   _lastSyncedTransactionIds.clear(); // Clear synced IDs
+  _lastSyncedSubCategoriesSignature = null;
+  _lastSyncedPaymentMethodsSignature = null;
   localStorage.removeItem(SYNC_META_KEY);
   localStorage.removeItem(SYNC_TOKEN_KEY);
   setAutoSyncEnabled(false);
@@ -262,10 +270,25 @@ async function pushToSheets(appState, silent = false) {
 
     console.log("[Sync] Writing transactions to spreadsheet...");
     await _writeTransactions(appState.transactions || []);
-    console.log("[Sync] Writing sub-categories...");
-    await _writeSubCategories(appState.subCategories || {});
-    console.log("[Sync] Writing payment methods...");
-    await _writePaymentMethods(appState.paymentMethods || []);
+    const subCategories = appState.subCategories || {};
+    const subCategoriesSignature = _getSubCategoriesSignature(subCategories);
+    if (subCategoriesSignature !== _lastSyncedSubCategoriesSignature) {
+      console.log("[Sync] Writing sub-categories...");
+      await _writeSubCategories(subCategories);
+      _lastSyncedSubCategoriesSignature = subCategoriesSignature;
+    } else {
+      console.log("[Sync] Sub-categories unchanged, skipping rewrite");
+    }
+
+    const paymentMethods = appState.paymentMethods || [];
+    const paymentMethodsSignature = _getPaymentMethodsSignature(paymentMethods);
+    if (paymentMethodsSignature !== _lastSyncedPaymentMethodsSignature) {
+      console.log("[Sync] Writing payment methods...");
+      await _writePaymentMethods(paymentMethods);
+      _lastSyncedPaymentMethodsSignature = paymentMethodsSignature;
+    } else {
+      console.log("[Sync] Payment methods unchanged, skipping rewrite");
+    }
     console.log("[Sync] Writing metadata...");
     await _writeMetadata(appState);
 
@@ -432,6 +455,8 @@ async function pullFromSheets() {
     const transactions = await _readTransactions();
     const subCategories = await _readSubCategories();
     const paymentMethods = await _readPaymentMethods();
+    _lastSyncedSubCategoriesSignature = _getSubCategoriesSignature(subCategories);
+    _lastSyncedPaymentMethodsSignature = _getPaymentMethodsSignature(paymentMethods);
 
     _lastSyncTime = new Date().toISOString();
     // Update sheet modified baseline after pull
@@ -586,6 +611,8 @@ async function _autoPullFromDiscoveredSpreadsheet() {
     const transactions = await _readTransactions();
     const subCategories = await _readSubCategories();
     const paymentMethods = await _readPaymentMethods();
+    _lastSyncedSubCategoriesSignature = _getSubCategoriesSignature(subCategories);
+    _lastSyncedPaymentMethodsSignature = _getPaymentMethodsSignature(paymentMethods);
     
     // Trigger callback to merge data in app.js
     if (_onDataMerge && typeof _onDataMerge === "function") {
@@ -701,8 +728,22 @@ function _saveSyncMeta() {
     lastPushTime: _lastPushTime,
     autoSyncEnabled: _autoSyncEnabled,
     lastSyncedTransactionIds: [..._lastSyncedTransactionIds],
-    lastKnownSheetModified: _lastKnownSheetModified
+    lastKnownSheetModified: _lastKnownSheetModified,
+    lastSyncedSubCategoriesSignature: _lastSyncedSubCategoriesSignature,
+    lastSyncedPaymentMethodsSignature: _lastSyncedPaymentMethodsSignature
   }));
+}
+
+function _getSubCategoriesSignature(subCategories) {
+  const normalized = {};
+  Object.keys(subCategories || {}).sort().forEach(category => {
+    normalized[category] = [...(subCategories[category] || [])].sort();
+  });
+  return JSON.stringify(normalized);
+}
+
+function _getPaymentMethodsSignature(methods) {
+  return JSON.stringify([...(methods || [])].sort());
 }
 
 async function _sheetsRequest(endpoint, options = {}) {
@@ -750,6 +791,8 @@ async function _ensureSpreadsheet() {
   });
 
   _spreadsheetId = result.spreadsheetId;
+  _lastSyncedSubCategoriesSignature = null;
+  _lastSyncedPaymentMethodsSignature = null;
   _saveSyncMeta();
 
   // Write headers
