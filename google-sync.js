@@ -7,7 +7,7 @@
 // ── CONFIG ────────────────────────────────────
 // Replace this with your own OAuth 2.0 Client ID from Google Cloud Console
 const GOOGLE_CLIENT_ID = "591977207769-epc99j316gtokb9g8bqatjvk3acepg5h.apps.googleusercontent.com";
-const SCOPES = "https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/userinfo.email";
+const SCOPES = "https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/userinfo.email";
 const SHEETS_API = "https://sheets.googleapis.com/v4/spreadsheets";
 const DRIVE_API = "https://www.googleapis.com/drive/v3/files";
 const SPREADSHEET_NAME = "CatatKas – Data Keuangan";
